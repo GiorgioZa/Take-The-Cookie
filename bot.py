@@ -39,7 +39,7 @@ risultato = []
 date = []
 
 app = Client(
-    "my_bot",
+    "take_the_cookie",
     bot_token="INSERT YOUR BOT TOKEN HERE",
     sleep_threshold= 50
 )
@@ -68,7 +68,7 @@ def create_date(seconds):
 def start_scheduler():  # funziona
     if group_id== "0":
         try:
-            scheduler.add_job(main, 'interval',  seconds=5, id='fuck')
+            scheduler.add_job(main, 'interval',  seconds=5, id='main')
         except:
             pass
     else:
@@ -106,13 +106,13 @@ def dev(message):  # terminata
     return
 
 
-@app.on_callback_query(filters.regex("updateCookie"))
+@app.on_callback_query(filters.regex("update_cookie"))
 def update(client, callback_query):
     try:
         app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id, create_list(), reply_markup=InlineKeyboardMarkup(
             [
                 [InlineKeyboardButton(
-                    "Aggiorna", callback_data="updateCookie")],
+                    "Aggiorna", callback_data="update_cookie")],
             ]))
     except:
         callback_query.answer("Informazioni già aggiornate!", show_alert=True)
@@ -123,7 +123,7 @@ def print_list(message):  # terminata
     app.send_message(message.chat.id, create_list(), reply_markup=InlineKeyboardMarkup(
         [
             [InlineKeyboardButton(
-                "Aggiorna", callback_data="updateCookie")],
+                "Aggiorna", callback_data="update_cookie")],
         ]))
     return
 
@@ -732,7 +732,7 @@ def listc(client, message):  # terminato
     print_list(message)
 
 
-@app.on_message((filters.group) & filters.command("groupinfo"))
+@app.on_message((filters.group) & filters.command("group_info"))
 def group_info(client, message):
     gruppi = group.search(Query()['id'] == message.chat.id)
     if gruppi == []:
@@ -743,14 +743,14 @@ def group_info(client, message):
     text = f"Nome: **{gruppo.title}**\nID: <code>{gruppo.id}</code>\nMembri: **{gruppo.members_count}**\nTotale biscotti: {0 if gruppi[0]['biscotti']==0 else gruppi[0]['biscotti']}\nPremio: {'**Disattivato**' if gruppi[0]['myfilms']==False else '**Attivato**'}\nVisibilità: {'**Visibile**' if gruppi[0]['hidden']==False else '**Nascosta**'}"
     app.send_message(message.chat.id, text, reply_markup=InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("Visibilità", callback_data="setprivacy"), InlineKeyboardButton(
-                "Premio", callback_data="setgift")],
+            [InlineKeyboardButton("Visibilità", callback_data="set_privacy"), InlineKeyboardButton(
+                "Premio", callback_data="set_gift")],
             [InlineKeyboardButton(
                 "Tutorial", url="https://t.me/TakeTheCookie/6")]
         ]))
 
 
-@app.on_callback_query(filters.regex('setprivacy'))
+@app.on_callback_query(filters.regex('set_privacy'))
 def set_privacy(client, callback_query):  # terminato
     global admin
     found_admin(callback_query.message.chat.id)
@@ -767,8 +767,8 @@ def set_privacy(client, callback_query):  # terminato
         try:
             app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id, f"Nome: **{gruppo.title}**\nID: <code>{gruppo.id}</code>\nMembri: **{gruppo.members_count}**\nTotale biscotti: {0 if gruppi[0]['biscotti']==0 else gruppi[0]['biscotti']}\nPremio: {'**Disattivato**' if gruppi[0]['myfilms']==False else '**Attivato**'}\nVisibilità: {'**Visibile**' if gruppi[0]['hidden']==False else '**Nascosta**'}", reply_markup=InlineKeyboardMarkup(
                 [
-                    [InlineKeyboardButton("Visibilità", callback_data="setprivacy"), InlineKeyboardButton(
-                        "Premio", callback_data="setgift")],
+                    [InlineKeyboardButton("Visibilità", callback_data="set_privacy"), InlineKeyboardButton(
+                        "Premio", callback_data="set_gift")],
                     [InlineKeyboardButton(
                         "Tutorial", url="https://t.me/TakeTheCookie/6")]
                 ]))
@@ -780,7 +780,7 @@ def set_privacy(client, callback_query):  # terminato
     admin = []
 
 
-@app.on_callback_query(filters.regex("setgift"))
+@app.on_callback_query(filters.regex("set_gift"))
 def set_gift(client, callback_query):
     global admin
     found_admin(callback_query.message.chat.id)
@@ -797,8 +797,8 @@ def set_gift(client, callback_query):
         try:
             app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id, f"Nome: **{gruppo.title}**\nID: <code>{gruppo.id}</code>\nMembri: **{gruppo.members_count}**\nTotale biscotti: {0 if query[0]['biscotti']==0 else query[0]['biscotti']}\nPremio: {'**Disattivato**' if query[0]['myfilms']==False else '**Attivato**'}\nVisibilità: {'**Visibile**' if query[0]['hidden']==False else '**Nascosta**'}", reply_markup=InlineKeyboardMarkup(
                 [
-                    [InlineKeyboardButton("Visibilità", callback_data="setprivacy"), InlineKeyboardButton(
-                        "Premio", callback_data="setgift")],
+                    [InlineKeyboardButton("Visibilità", callback_data="set_privacy"), InlineKeyboardButton(
+                        "Premio", callback_data="set_gift")],
                     [InlineKeyboardButton(
                         "Tutorial", url="https://t.me/TakeTheCookie/6")]
                 ]))
@@ -821,7 +821,7 @@ def info(client, message):
     app.send_message(message.chat.id, text)
 
 
-@app.on_message(filters.chat(super_user) & filters.command("forcecookie"))
+@app.on_message(filters.chat(super_user) & filters.command("force_cookie"))
 def force_cookie(client, message):
     app.send_message(log_group,
                      "Ho avviato la scelta manuale del biscotto")
@@ -830,7 +830,7 @@ def force_cookie(client, message):
     return
 
 
-@app.on_message(filters.chat(super_user) & filters.command("forceClose"))
+@app.on_message(filters.chat(super_user) & filters.command("force_close"))
 def force_result(client, message):
     app.send_message(log_group,
                      "Ho avviato la chiusura delle scommesse manuali")
@@ -839,7 +839,7 @@ def force_result(client, message):
     return
 
 
-@app.on_message(filters.chat(super_user) & filters.command("forceGroup"))
+@app.on_message(filters.chat(super_user) & filters.command("force_group"))
 def force_group(client, message):
     app.send_message(log_group,
                      "Ho avviato la scelta di prendere un nuovo gruppo")
@@ -869,11 +869,11 @@ def stats(client, message):
         message.chat.id, f"Statisiche di {message.from_user.mention}:\n\nTotale biscotti: **{query[0]['total_quantity']}**\nTotale sessioni vinte: **{query[0]['session']}**", reply_markup=InlineKeyboardMarkup(
             [
                 [InlineKeyboardButton(
-                    "Aggiorna", callback_data="updatestats")],
+                    "Aggiorna", callback_data="update_stats")],
             ]))
 
 
-@app.on_callback_query(filters.regex("updatestats"))
+@app.on_callback_query(filters.regex("update_stats"))
 def edit(client, callback_query):
     query = sessioni.search(Query()['id_user'] == callback_query.from_user.id)
     if query == []:
@@ -881,7 +881,7 @@ def edit(client, callback_query):
             app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id, "Utente non trovato!", reply_markup=InlineKeyboardMarkup(
                 [
                     [InlineKeyboardButton(
-                        "Aggiorna", callback_data="updatestats")],
+                        "Aggiorna", callback_data="update_stats")],
                 ]))
         except:
             pass
@@ -890,7 +890,7 @@ def edit(client, callback_query):
             app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id, f"Statisiche di {callback_query.from_user.mention}:\n\nTotale biscotti: **{query[0]['total_quantity']}**\nTotale sessioni vinte: **{query[0]['session']}**", reply_markup=InlineKeyboardMarkup(
                 [
                     [InlineKeyboardButton(
-                        "Aggiorna", callback_data="updatestats")],
+                        "Aggiorna", callback_data="update_stats")],
                 ]))
         except:
             callback_query.answer(
@@ -899,7 +899,7 @@ def edit(client, callback_query):
 
 def main():
     try:
-        scheduler.remove_job("fuck")
+        scheduler.remove_job("main")
     except:
         pass
     select_group()
