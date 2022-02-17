@@ -1,0 +1,13 @@
+{
+    "_default": {
+        "1": {
+            "id_user": "<User id here>",
+            "user": "GiorgioZa #raphael",
+            "quantity": 1,
+            "session": 0,
+            "username": "@GiorgioZa",
+            "group": "<Title group here>",
+            "group_id": "<group id here>"
+        }
+    }
+}

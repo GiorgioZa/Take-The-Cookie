@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Classifica biscottini</title>
+	<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" type="text/css" href="static/style.css">
+	<link rel="shortcut icon" type="image/icon" href="static/img/favicon.png" />
+</head>
+
+<body>
+	<section class="main-content">
+		<div class="container">
+			<h1 style="text-align: center;">BISCOTTIH?!?</h1>
+			<p style="text-align: center;">Classifica completa di tutti i raccoglitori di biscotti in questa sessione
+			</p>
+			<br>
+			<br>
+			<div class="row">
+				{% if number >= 2 or number==2: %}
+				<div class="col-sm-4">
+					<div class="leaderboard-card leaderboard-card--second">
+						<div class="leaderboard-card__top">
+							<h3 class="text-center">🍪 {{user[1]['quantity']}}</h3>
+						</div>
+						<div class="leaderboard-card__body">
+							<div class="text-center">
+								{% if user[1]['propic'] != "false" %}
+								<img src="../static/img/{{user[1]['id_user']}}.png" class="circle-img mb-2" alt="User Img">
+								{% else %}
+								<img src="../static/img/disable.png" class="circle-img mb-2" alt="User Img">
+								{%endif%}
+								<h5 class="mb-0">{{user[1]['user']}}</h5>
+								<p class="text-muted mb-0">{{user[1]['username']}}</p>
+								<hr>
+							</div>
+						</div>
+					</div>
+				</div>
+				{%endif%}
+				{% if number >= 1 or number==1: %}
+				<div class="col-sm-4">
+					<div class="leaderboard-card leaderboard-card--first">
+						<div class="leaderboard-card__top">
+							<h3 class="text-center">🍪 {{user[0]['quantity']}}</h3>
+						</div>
+						<div class="leaderboard-card__body">
+							<div class="text-center">
+								{% if user[0]['propic']!= "false" %}
+								<img src="../static/img/{{user[0]['id_user']}}.png" class="circle-img mb-2" alt="User Img">
+								{% else %}
+								<img src="../static/img/disable.png" class="circle-img mb-2" alt="User Img">
+								{%endif%}
+								<h5 class="mb-0">{{user[0]['user']}}</h5>
+								<p class="text-muted mb-0">{{user[0]['username']}}</p>
+								<hr>
+							</div>
+						</div>
+					</div>
+				</div>
+				{%endif%}
+				{% if number >= 3 or number==3: %}
+				<div class="col-sm-4">
+					<div class="leaderboard-card leaderboard-card--third">
+						<div class="leaderboard-card__top">
+							<h3 class="text-center">🍪 {{user[2]['quantity']}}</h3>
+						</div>
+						<div class="leaderboard-card__body">
+							<div class="text-center">
+								{% if user[2]['propic']!= "false" %}
+								<img src="../static/img/{{user[2]['id_user']}}.png" class="circle-img mb-2" alt="User Img">
+								{% else %}
+								<img src="../static/img/disable.png" class="circle-img mb-2" alt="User Img">
+								{%endif%}
+								<h5 class="mb-0">{{user[2]['user']}}</h5>
+								<p class="text-muted mb-0">{{user[2]['username']}}</p>
+								<hr>
+							</div>
+						</div>
+					</div>
+				</div>
+				{%endif%}
+			</div>
+			<h4>Classifica completa:</h4>
+			<table class="table">
+				<thead>
+					<tr>
+						<th>Utente</th>
+						<th>Biscotti ottenuti</th>
+						<th>Sessioni vinte</th>
+						<th>Gruppo</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for element in user: %}
+					<tr>
+						<td>
+							<div class="d-flex align-items-center">
+								{% if element['propic']!= "false" %}
+								<img src="../static/img/{{element['id_user']}}.png" class="circle-img mb-2" alt="User Img">
+								{% else %}
+								<img src="../static/img/disable.png" class="circle-img mb-2" alt="User Img">
+								{%endif%}
+								<div class="user-info__basic">
+									<h5 class="mb-0">{{element['user']}}</h5>
+									<p class="text-muted mb-0">{{element['username']}}</p>
+								</div>
+							</div>
+						</td>
+						<td>
+							<div class="d-flex align-items-baseline">
+								<h4 class="mr-1">{{element['quantity']}}</h4>
+							</div>
+						</td>
+						<td>
+							<div class="d-flex align-items-baseline">
+								<h4 class="mr-1">{{element['session']}}</h4>
+							</div>
+						</td>
+						<td>
+							{% for info in gruppi: %}
+							{% if info['id'] == element['group_id'] %}
+							{% if info['hidden'] == True %}
+							*Informazione nascosta dagli admin del gruppo*
+							{% else %}
+							{{element['group']}}
+							{%endif%}
+							{%endif%}
+							{% endfor %}
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</section>
+	<footer style="text-align: center; color: gray;">
+		<p>Classifica generata da <a href="https://t.me/TakeTheCookieBot">@TakeTheCookieBot</a> su telegram, segui <a href="https://t.me/TakeTheCookie">TakeTheCookie</a>!</p>
+	</footer>
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+</body>
+
+</html>
