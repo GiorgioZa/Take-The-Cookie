@@ -1,5 +1,4 @@
 import random
-import sched
 import time
 from datetime import datetime, timedelta
 from pytz import timezone
@@ -14,8 +13,10 @@ from tinydb import Query, TinyDB, queries
 scheduler = BackgroundScheduler()
 
 group_id = "0"
-super_user = "<YOUR PERSONAL USER ID>"
-log_group = "<YOUR PERSONAL LOG GROUP ID>"
+
+temp = open("super_user.txt", "r").read().split(", ")
+super_user = [eval(x) for x in temp]
+log_group = open("log_group.txt", "r").read()
 
 def read_file():
     try:
@@ -241,6 +242,7 @@ def expired_query(client, callback_query):
                                      f"Complementi {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name}, sei arrivato ai 30 biscotti perciò hai vinto questa sessione!🎉🎊")
                 app.send_message(
                     log_group, f"{'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name} è arrivato a 30 biscotti! Database resettato.")
+                win(callback_query)
                 session.update({'session': sessionqa+1}, Query()
                                 ['id_user'] == callback_query.from_user.id)
                 cookie.update({'session': sessionqa+1}, Query()
@@ -259,6 +261,13 @@ def expired_query(client, callback_query):
             cookie.update({'propic': "true"}, Query()[
                             'id_user'] == callback_query.from_user.id)
     return
+
+
+def win(winner):
+    all_group = group.all()
+    for element in all_group:
+        if element['id'] != winner.message.chat.id:
+            app.send_message(element['id'], f"EVVIVA! Questa sessione è stata vinta da {winner.from_user.mention}!🥳")
 
 
 def biscotto(chat_group):
@@ -681,6 +690,7 @@ def taken(client, callback_query):
                                  f"Complementi {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name}, sei arrivato ai 30 biscotti perciò hai vinto questa sessione!🎉🎊")
             app.send_message(
                 log_group, f"{'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name} è arrivato a 30 biscotti! Database resettato.")
+            win(callback_query)
             session.update({'session': sessionqa+1}, Query()
                             ['id_user'] == callback_query.from_user.id)
             cookie.update({'session': sessionqa+1}, Query()
