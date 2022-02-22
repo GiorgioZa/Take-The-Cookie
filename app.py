@@ -1,24 +1,33 @@
 from flask import Flask, render_template, url_for
 from tinydb import TinyDB, Query
-biscotti = TinyDB("biscotti.json")
+cookie = TinyDB("cookie.json")
 group = TinyDB("group.json")
 app = Flask(__name__)
-def myFunc(e):
-  return e['quantity']
+
+
+def sort_QTA(e):
+    return -e['quantity']
+
+
+def sort_name(e):
+    return e['user']
+
 
 @app.route('/')
 @app.route('/index')
 def index():
-  biscott = biscotti.all()
-  gruppo = group.all()
-  biscott.sort(reverse=True, key=myFunc)
-  if len(biscott) == 0:
-    return render_template('error.html')
-  if len(biscott) >= 1:
-    return render_template('index.html',number=len(biscott), user = biscott, gruppi = gruppo)
+    cookies = cookie.all()
+    groups = group.all()
+    cookies.sort(key=lambda x: (sort_QTA(x), sort_name(x)))
+    if len(cookies) == 0:
+        return render_template('error.html')
+    if len(cookies) >= 1:
+        return render_template('index.html', number=len(cookies), user=cookies, gruppi=groups)
+
 
 @app.errorhandler(404)
 def page_not_found(error):
-  return render_template('error.html'), 404
+    return render_template('error.html'), 404
+
 
 app.run(host='0.0.0.0', port=80)
