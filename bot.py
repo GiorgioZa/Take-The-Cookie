@@ -153,7 +153,7 @@ def expired(bisquit):
     app.edit_message_reply_markup(bisquit.chat.id, bisquit.message_id, InlineKeyboardMarkup([[
         InlineKeyboardButton("Mangia il biscotto!🤔🍪", callback_data="expired")]]))
     try:
-        scheduler.remove_job('expired')
+        scheduler.remove_job(f'expired{bisquit.chat.id}')
     except:
         app.send_message(log_group,
                          "non sono riuscito a modificare la tastiera del biscotto marcio!")
@@ -322,7 +322,7 @@ def biscotto(chat_group):
         write_last_group(group_id)
         try:
             scheduler.add_job(expired, 'interval',  hours=1,
-                              args=(bisquit,), id='expired')
+                              args=(bisquit,), id=f"expired{chat_group}", replace_existing=True)
         except:
             app.send_message(log_group,
                              "non sono riuscito a creare lo scheduler per i biscotti scaduti :(")
@@ -530,7 +530,7 @@ def bet_fun(message):
                          "questo gruppo ha già fatto la scommessa di giornata")
 
     try:
-        scheduler.add_job(remove, 'interval', minutes=1,
+        scheduler.add_job(remove, 'interval', hours=1,
                           args=(id,), id='remove'+str(id))
     except:
         pass
@@ -556,7 +556,7 @@ def remove_before(chatgroup):
                 'result': results.voter_count
             }
             result.append(temp)
-        result.sort(key=get_result)
+        result.sort(reverse=True, key=get_result)
         if result[0]['result'] == result[1]['result']:
             app.send_message(
                 gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
@@ -600,7 +600,7 @@ def remove(id_group):
                 'result': results.voter_count
             }
             result.append(temp)
-        result.sort(key=get_result)
+        result.sort(reverse=True, key=get_result)
         if result[0]['result'] == result[1]['result']:
             app.send_message(
                 gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
