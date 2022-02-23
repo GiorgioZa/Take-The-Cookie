@@ -16,13 +16,17 @@ group_id = "0"
 
 temp = open("super_user.txt", "r").read().split(", ")
 super_user = [eval(x) for x in temp]
-log_group = open("log_group.txt", "r").read()
+log_group = int(open("log_group.txt", "r").read())
+
 
 def read_file():
     try:
         f = open("last_group.txt", "r")
-        last_group_id = f.read().split("\n")
+        last_group_id = f.read().split(",")
         f.close()
+        for element in last_group_id:
+            if element == "":
+                last_group_id.remove(element)
         return last_group_id
     except FileNotFoundError:
         return None
@@ -53,6 +57,7 @@ def get_result(e):
 def get_quantity(e):
     return -e['quantity']
 
+
 def get_name(e):
     return e['user']
 
@@ -71,9 +76,10 @@ def create_date(seconds):
 
 def start_scheduler():
     if group_id == "0":
-            scheduler.add_job(main, 'interval',  seconds=5, id='main', replace_existing=True)
+        scheduler.add_job(main, 'interval',  seconds=5,
+                          id='main', replace_existing=True)
     else:
-            scheduler.add_job(biscotto, 'interval',  seconds=10, args=(group_id,), id='biscotto', replace_existing=True)
+           scheduler.add_job(biscotto, 'interval',  seconds=10, args=(group_id,), id='biscotto', replace_existing=True)
     try:
         scheduler.start()
     except:
@@ -129,7 +135,7 @@ def create_list():
     totale = cookie.all()
     if len(totale) < 1:
         return "Nessuno ha riscattato biscotti per ora :("
-    totale.sort(key=lambda x : (get_quantity(x), get_name(x)))
+    totale.sort(key=lambda x: (get_quantity(x), get_name(x)))
     text = "Podio goloso:"
     for x in range(0, 3):
         try:
@@ -154,6 +160,35 @@ def expired(bisquit):
     select_group()
     biscotto(group_id)
     return
+
+
+def verify_win(info):
+    bisquit = cookie.search(Query()['id_user'] == info.from_user.id)
+    sessionva = session.search(Query()['id_user'] == info.from_user.id)
+    quantity = bisquit[0]['quantity']
+    sessionqa = sessionva[0]['session']
+    quantity = bisquit[0]['quantity']
+    if quantity == 10:
+        app.send_message(info.message.chat.id,
+                         f"{'@'+info.from_user.username if info.from_user.username else info.from_user.first_name} ha raggiunto i 10 biscotti!🎊")
+    elif quantity == 20:
+        app.send_message(info.message.chat.id,
+                         f"{'@'+info.from_user.username if info.from_user.username else info.from_user.first_name} ha raggiunto i 20 biscotti!🎊")
+    elif quantity == 30:
+        query = group.search(Query()['id'] == info.message.chat.id)
+        if query[0]['myfilms'] == True:
+            app.send_message(info.message.chat.id, f"Complementi {'@'+info.from_user.username if info.from_user.username else info.from_user.first_name}, sei arrivato ai 30 biscotti🎉🎊.\nHai vinto il premio messo in palio dal progetto MyFilms che collabora con noi. Per ritirare il tuo mese gratuito contatta @Mario_Myfilms, ti guiderà lui.\n\nPer tutti gli altri utenti incuriositi del progetto che vorrebbero avere ulteriori info, potete contattare @Mario_Myfilms! (anche perchè ai non vincitori spetta comunque una promo 🌚)\n\nIn bocca al lupo al prossimo vincitore 😁\n\n❕*Ovviamente il vincitore attuale è escluso dalle vincite per i prossimi mesi.*\n** *Il vincitore può anche rifiutare il premio scegliendo se passarlo al secondo classificato o ad un utente a caso;* **")
+        else:
+            app.send_message(info.message.chat.id,
+                             f"Complementi {'@'+info.from_user.username if info.from_user.username else info.from_user.first_name}, sei arrivato ai 30 biscotti perciò hai vinto questa sessione!🎉🎊")
+        app.send_message(
+            log_group, f"{'@'+info.from_user.username if info.from_user.username else info.from_user.first_name} è arrivato a 30 biscotti! Database resettato.")
+        win(info)
+        session.update({'session': sessionqa+1}, Query()
+                       ['id_user'] == info.from_user.id)
+        cookie.update({'session': sessionqa+1}, Query()
+                      ['id_user'] == info.from_user.id)
+        cookie.truncate()
 
 
 @app.on_callback_query(filters.regex("expired"))
@@ -182,13 +217,13 @@ def expired_query(client, callback_query):
                              f"Che sfortuna, il primo biscotto in assoluto di {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.mention()} era avariato *biscotto triste*. Mostrategli un pò di compassione.")
         else:
             quantity = bisquit[0]['quantity']
-            sessionv = sessionva [0]['session']
+            sessionv = sessionva[0]['session']
             quantity -= 1
             total = sessionva[0]['total_quantity']
             cookie.update({'user': callback_query.from_user.first_name, 'quantity': quantity, 'session': sessionv, 'username': f"{'@'+callback_query.from_user.username if callback_query.from_user.username else None}",
-                            'group': f"{'@'+callback_query.message.chat.username if callback_query.message.chat.username else callback_query.message.chat.title}", 'group_id': callback_query.message.chat.id}, Query()['id_user'] == callback_query.from_user.id)
+                           'group': f"{'@'+callback_query.message.chat.username if callback_query.message.chat.username else callback_query.message.chat.title}", 'group_id': callback_query.message.chat.id}, Query()['id_user'] == callback_query.from_user.id)
             session.update({'total_quantity': total-1}, Query()
-                            ['id_user'] == callback_query.from_user.id)
+                           ['id_user'] == callback_query.from_user.id)
     else:
         app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
                               f"Il 🍪 avariato è stato mangiato da {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.mention()} senza conseguenze🎉!")
@@ -205,7 +240,7 @@ def expired_query(client, callback_query):
             Query()['id_user'] == callback_query.from_user.id)
         if bisquit == []:
             cookie.insert({'id_user': callback_query.from_user.id, 'user': callback_query.from_user.first_name, 'quantity': 1, 'session': 0, 'username': f"{'@'+callback_query.from_user.username if callback_query.from_user.username else None}",
-                            'group': f"{'@'+callback_query.message.chat.username if callback_query.message.chat.username else callback_query.message.chat.title}", 'group_id': callback_query.message.chat.id})
+                           'group': f"{'@'+callback_query.message.chat.username if callback_query.message.chat.username else callback_query.message.chat.title}", 'group_id': callback_query.message.chat.id})
             if sessionva == []:
                 session.insert({'id_user': callback_query.from_user.id, 'user': callback_query.from_user.first_name,
                                 'username': f"{'@'+callback_query.from_user.username if callback_query.from_user.username else None}", 'total_quantity': 1, 'session': 0})
@@ -213,41 +248,20 @@ def expired_query(client, callback_query):
                 total = sessionva[0]['total_quantity']
                 sessionqa = sessionva[0]['session']
                 session.update({'total_quantity': total+1}, Query()
-                                ['id_user'] == callback_query.from_user.id)
+                               ['id_user'] == callback_query.from_user.id)
                 cookie.update({'session': sessionqa}, Query()[
-                                'id_user'] == callback_query.from_user.id)
+                    'id_user'] == callback_query.from_user.id)
         else:
             quantity = bisquit[0]['quantity']
             sessionqa = sessionva[0]['session']
             quantity += 1
             total = sessionva[0]['total_quantity']
             cookie.update({'user': callback_query.from_user.first_name, 'quantity': quantity, 'session': sessionqa, 'username': f"{'@'+callback_query.from_user.username if callback_query.from_user.username else None}",
-                            'group': f"{'@'+callback_query.message.chat.username if callback_query.message.chat.username else callback_query.message.chat.title}", 'group_id': callback_query.message.chat.id}, Query()['id_user'] == callback_query.from_user.id)
+                           'group': f"{'@'+callback_query.message.chat.username if callback_query.message.chat.username else callback_query.message.chat.title}", 'group_id': callback_query.message.chat.id}, Query()['id_user'] == callback_query.from_user.id)
             session.update({'total_quantity': total+1}, Query()
-                            ['id_user'] == callback_query.from_user.id)
+                           ['id_user'] == callback_query.from_user.id)
 
-            if quantity == 10:
-                app.send_message(callback_query.message.chat.id,
-                                 f"{'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name} ha raggiunto i 10 biscotti!🎊")
-            elif quantity == 20:
-                app.send_message(callback_query.message.chat.id,
-                                 f"{'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name} ha raggiunto i 20 biscotti!🎊")
-            elif quantity == 30:
-                query = group.search(
-                    Query()['id'] == callback_query.message.chat.id)
-                if query[0]['myfilms'] == True:
-                    app.send_message(callback_query.message.chat.id, f"Complementi {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name}, sei arrivato ai 30 biscotti🎉🎊.\nHai vinto il premio messo in palio dal progetto MyFilms che collabora con noi. Per ritirare il tuo mese gratuito contatta @Mario_Myfilms, ti guiderà lui.\n\nPer tutti gli altri utenti incuriositi del progetto che vorrebbero avere ulteriori info, potete contattare @Mario_Myfilms! (anche perchè ai non vincitori spetta comunque una promo 🌚)\n\nIn bocca al lupo al prossimo vincitore 😁\n\n❕*Ovviamente il vincitore attuale è escluso dalle vincite per i prossimi mesi.*\n** *Il vincitore può anche rifiutare il premio scegliendo se passarlo al secondo classificato o ad un utente a caso;* **")
-                else:
-                    app.send_message(callback_query.message.chat.id,
-                                     f"Complementi {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name}, sei arrivato ai 30 biscotti perciò hai vinto questa sessione!🎉🎊")
-                app.send_message(
-                    log_group, f"{'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name} è arrivato a 30 biscotti! Database resettato.")
-                win(callback_query)
-                session.update({'session': sessionqa+1}, Query()
-                                ['id_user'] == callback_query.from_user.id)
-                cookie.update({'session': sessionqa+1}, Query()
-                                ['id_user'] == callback_query.from_user.id)
-                cookie.truncate()
+            verify_win(callback_query)
             group.update({'name': callback_query.message.chat.title},
                          Query()['id'] == callback_query.message.chat.id)
     try:
@@ -256,10 +270,10 @@ def expired_query(client, callback_query):
     except:
         if not (os.path.exists(f"static/{callback_query.from_user.id}.png")):
             cookie.update({'propic': "false"}, Query()[
-                            'id_user'] == callback_query.from_user.id)
+                'id_user'] == callback_query.from_user.id)
         else:
             cookie.update({'propic': "true"}, Query()[
-                            'id_user'] == callback_query.from_user.id)
+                'id_user'] == callback_query.from_user.id)
     return
 
 
@@ -267,7 +281,8 @@ def win(winner):
     all_group = group.all()
     for element in all_group:
         if element['id'] != winner.message.chat.id:
-            app.send_message(element['id'], f"EVVIVA! Questa sessione è stata vinta da {winner.from_user.mention}!🥳")
+            app.send_message(
+                element['id'], f"EVVIVA! Questa sessione è stata vinta da {winner.from_user.mention}!🥳")
 
 
 def biscotto(chat_group):
@@ -304,6 +319,7 @@ def biscotto(chat_group):
                              f"non ho inviato il biscotto nel gruppo {gruppo.title} perchè ho avuto un problema")
             main()
             return
+        write_last_group(group_id)
         try:
             scheduler.add_job(expired, 'interval',  hours=1,
                               args=(bisquit,), id='expired')
@@ -317,11 +333,11 @@ def biscotto(chat_group):
         data = create_data()
         group.update({'date': data, 'biscotti': nbiscotti+1},
                      Query()['id'] == group_id)
-        temp = bet.all()
-        if chat_group in temp:
-            bet.update({'result': 'SI'}, Query()[
-                'id_group'] == chat_group)
-            remove_before(chat_group)
+        temp_bet = bet.all()
+        for element in temp_bet:
+            if element['id_group'] == chat_group:
+                bet.update({'result': 'SI'}, Query()['id_group'] == chat_group)
+                remove_before(chat_group)
     else:
         main()
 
@@ -435,24 +451,31 @@ def select_group():
             else:
                 i = 0
         if i < 4:
+            group_id = "0"
             select_group()
             return
-        list_group.append(group_id)
-        os.remove("last_group.txt")
-        f = open("last_group.txt", "a")
-        for element in list_group:
-            f.write(f"{element}\n")
-        f.close()
-    else:
-        f = open("last_group.txt", "a")
-        f.write(f"{group_id}\n")
-        f.close()
     try:
         temp = app.get_chat(group_id)
         app.send_message(log_group,
                          f"Il prossimo gruppo in cui verrà inviato il biscotto è: {temp.title}")
     except:
-        pass
+        print("errore")
+
+
+def write_last_group(group_id):
+    list_group = read_file()
+    if list_group != None:
+        list_group.append(str(group_id))
+        os.remove("last_group.txt")
+        f = open("last_group.txt", "a")
+        for element in list_group:
+            f.write(f"{element},")
+        f.close()
+    else:
+        f = open("last_group.txt", "a")
+        f.write(f"{group_id},")
+        f.close()
+    return
 
 
 def find_result(chat_group):
@@ -464,7 +487,7 @@ def find_result(chat_group):
                 app.send_message(
                     chat_group, "Complimenti! Questo gruppo ha vinto la scommessa della giornata!!")
                 bet.update({'announce': True}, Query()
-                                 ['id_group'] == chat_group)
+                           ['id_group'] == chat_group)
                 app.send_message(log_group,
                                  f"Scommessa vinta in : {gruppo.title}")
                 global takenb
@@ -475,7 +498,7 @@ def find_result(chat_group):
                 app.send_message(
                     chat_group, "Oh no! Hai perso la scommessa di giornata *sad cookie intensifies*")
                 bet.update({'announce': True}, Query()
-                                 ['id_group'] == chat_group)
+                           ['id_group'] == chat_group)
                 app.send_message(log_group,
                                  f"Scommessa persa in : {gruppo.title}")
 
@@ -501,13 +524,13 @@ def bet_fun(message):
         app.send_message(log_group,
                          f"Questo gruppo ha avviato un nuovo sondaggio: {gruppo.title}")
         bet.insert({'id_group': id, 'id_poll': id_poll['message_id'],
-                         'choice': None, 'result': 'NO', 'announce': False})
+                    'choice': None, 'result': 'NO', 'announce': False})
     else:
         app.send_message(id,
                          "questo gruppo ha già fatto la scommessa di giornata")
 
     try:
-        scheduler.add_job(remove, 'interval', hours=1,
+        scheduler.add_job(remove, 'interval', minutes=1,
                           args=(id,), id='remove'+str(id))
     except:
         pass
@@ -520,31 +543,33 @@ def remove_before(chatgroup):
     gruppo = bet.search(Query()['id_group'] == chatgroup)
     if gruppo[0]['announce'] == False:
         try:
-            poll_result = app.stop_poll(gruppo[0]['id_group'], gruppo[0]['id_poll'])
-            temp = []
-            for results in poll_result['options']:
-                temp = {
-                    'value': results.text,
-                    'result': results.voter_count
-                }
-                result.append(temp)
-            result.sort(key=lambda x : (get_quantity(x), get_name(x)))
-            if result[0]['result'] == result[1]['result']:
-                app.send_message(
-                    gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
-                app.send_message(log_group,
-                                 f"Parità raggiunta anticipatamente in questo gruppo: {tp.title}")
-            else:
-                app.send_message(
-                    gruppo[0]['id_group'], f"Risultato del sondaggio:\n-{result[0]['value']}: {result[0]['result']}\n-{result[1]['value']}: {result[1]['result']}\n\nHa vinto il {result[0]['value']}!")
-                bet.update({'choice': result[0]['value']}, Query()[
-                                 'id_group'] == gruppo[0]['id_group'])
-                app.send_message(log_group,
-                                 f"In questo gruppo, il sondaggio si è chiuso positivamente anticipatamente: {tp.title}")
-            result = []
+            poll_result = app.stop_poll(
+                gruppo[0]['id_group'], gruppo[0]['id_poll'])
         except:
             app.send_message(log_group,
                              f"Non posso chiudere questo sondaggio anticipatamente: {tp.title}, {gruppo[0]['id_poll']}")
+            return
+        temp = []
+        for results in poll_result['options']:
+            temp = {
+                'value': results.text,
+                'result': results.voter_count
+            }
+            result.append(temp)
+        result.sort(key=get_result)
+        if result[0]['result'] == result[1]['result']:
+            app.send_message(
+                gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
+            app.send_message(log_group,
+                             f"Parità raggiunta anticipatamente in questo gruppo: {tp.title}")
+        else:
+            app.send_message(
+                gruppo[0]['id_group'], f"Risultato del sondaggio:\n-{result[0]['value']}: {result[0]['result']}\n-{result[1]['value']}: {result[1]['result']}\n\nHa vinto il {result[0]['value']}!")
+            bet.update({'choice': result[0]['value']}, Query()[
+                'id_group'] == gruppo[0]['id_group'])
+            app.send_message(log_group,
+                             f"In questo gruppo, il sondaggio si è chiuso positivamente anticipatamente: {tp.title}")
+        result = []
         find_result(chatgroup)
 
 
@@ -562,32 +587,33 @@ def remove(id_group):
     if gruppo[0]['announce'] == False:
         group = app.get_chat(gruppo[0]['id_group'])
         try:
-            poll_result = app.stop_poll(gruppo[0]['id_group'], gruppo[0]['id_poll'])
-            temp = []
-            for results in poll_result['options']:
-                temp = {
-                    'value': results.text,
-                    'result': results.voter_count
-                }
-                result.append(temp)
-            result.sort(key=lambda x : (get_quantity(x), get_name(x)))
-            if result[0]['result'] == result[1]['result']:
-                app.send_message(
-                    gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
-                app.send_message(log_group,
-                                 f"Parità raggiunta in questo gruppo: {group.title}")
-            else:
-                app.send_message(
-                    gruppo[0]['id_group'], f"Risultato del sondaggio:\n-{result[0]['value']}: {result[0]['result']}\n-{result[1]['value']}: {result[1]['result']}\n\nHa vinto il {result[0]['value']}!")
-                bet.update({'choice': result[0]['value']}, Query()[
-                                 'id_group'] == gruppo[0]['id_group'])
-                app.send_message(log_group,
-                                 f"In questo gruppo, il sondaggio si è chiuso positivamente: {group.title}")
-            result = []
+            poll_result = app.stop_poll(
+                gruppo[0]['id_group'], gruppo[0]['id_poll'])
         except:
             app.send_message(log_group,
                              f"Non posso chiudere questo sondaggio: {group.title}, {gruppo[0]['id_poll']}")
-            pass
+            return
+        temp = []
+        for results in poll_result['options']:
+            temp = {
+                'value': results.text,
+                'result': results.voter_count
+            }
+            result.append(temp)
+        result.sort(key=get_result)
+        if result[0]['result'] == result[1]['result']:
+            app.send_message(
+                gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
+            app.send_message(log_group,
+                             f"Parità raggiunta in questo gruppo: {group.title}")
+        else:
+            app.send_message(
+                gruppo[0]['id_group'], f"Risultato del sondaggio:\n-{result[0]['value']}: {result[0]['result']}\n-{result[1]['value']}: {result[1]['result']}\n\nHa vinto il {result[0]['value']}!")
+            bet.update({'choice': result[0]['value']}, Query()[
+                'id_group'] == gruppo[0]['id_group'])
+            app.send_message(log_group,
+                             f"In questo gruppo, il sondaggio si è chiuso positivamente: {group.title}")
+        result = []
     today = datetime.now()
     if today.hour <= 23 and today.hour >= 0 and today.minute <= 59:
         rimuovi = datetime(today.year, today.month,
@@ -636,7 +662,7 @@ def taken(client, callback_query):
         Query()['id_user'] == callback_query.from_user.id)
     if bisquit == []:
         cookie.insert({'id_user': callback_query.from_user.id, 'user': callback_query.from_user.first_name, 'quantity': 1, 'session': 0, 'username': f"{'@'+callback_query.from_user.username if callback_query.from_user.username else None}",
-                        'group': f"{'@'+callback_query.message.chat.username if callback_query.message.chat.username else callback_query.message.chat.title}", 'group_id': callback_query.message.chat.id})
+                       'group': f"{'@'+callback_query.message.chat.username if callback_query.message.chat.username else callback_query.message.chat.title}", 'group_id': callback_query.message.chat.id})
         if sessionv == []:
             session.insert({'id_user': callback_query.from_user.id, 'user': callback_query.from_user.first_name,
                             'username': f"{'@'+callback_query.from_user.username if callback_query.from_user.username else None}", 'total_quantity': 1, 'session': 0})
@@ -644,58 +670,37 @@ def taken(client, callback_query):
             total = sessionv[0]['total_quantity']
             sessionqa = sessionv[0]['session']
             session.update({'total_quantity': total+1}, Query()
-                            ['id_user'] == callback_query.from_user.id)
+                           ['id_user'] == callback_query.from_user.id)
             cookie.update({'session': sessionqa}, Query()[
-                            'id_user'] == callback_query.from_user.id)
+                'id_user'] == callback_query.from_user.id)
         try:
             app.download_media(callback_query.from_user.photo.big_file_id,
                                f"static/img/{callback_query.from_user.id}.png")
         except:
             if not (os.path.exists(f"static/{callback_query.from_user.id}.png")):
                 cookie.update({'propic': "false"}, Query()[
-                                'id_user'] == callback_query.from_user.id)
+                    'id_user'] == callback_query.from_user.id)
             else:
                 cookie.update({'propic': "true"}, Query()[
-                                'id_user'] == callback_query.from_user.id)
+                    'id_user'] == callback_query.from_user.id)
     else:
         quantity = bisquit[0]['quantity']
         quantity += 1
         sessionqa = sessionv[0]['session']
         total = sessionv[0]['total_quantity']
         cookie.update({'user': callback_query.from_user.first_name, 'quantity': quantity, 'session': sessionqa, 'username': f"{'@'+callback_query.from_user.username if callback_query.from_user.username else None}",
-                        'group': f"{'@'+callback_query.message.chat.username if callback_query.message.chat.username else callback_query.message.chat.title}", 'group_id': callback_query.message.chat.id}, Query()['id_user'] == callback_query.from_user.id)
+                       'group': f"{'@'+callback_query.message.chat.username if callback_query.message.chat.username else callback_query.message.chat.title}", 'group_id': callback_query.message.chat.id}, Query()['id_user'] == callback_query.from_user.id)
         session.update({'total_quantity': total+1}, Query()
-                        ['id_user'] == callback_query.from_user.id)
+                       ['id_user'] == callback_query.from_user.id)
         try:
             app.download_media(callback_query.from_user.photo.big_file_id,
                                f"static/img/{callback_query.from_user.id}.png")
             cookie.update({'propic': "true"}, Query()[
-                            'id_user'] == callback_query.from_user.id)
+                'id_user'] == callback_query.from_user.id)
         except:
             cookie.update({'propic': "false"}, Query()[
-                            'id_user'] == callback_query.from_user.id)
-        if quantity == 10:
-            app.send_message(callback_query.message.chat.id,
-                             f"{'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name} ha raggiunto i 10 biscotti!🎊")
-        elif quantity == 20:
-            app.send_message(callback_query.message.chat.id,
-                             f"{'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name} ha raggiunto i 20 biscotti!🎊")
-        elif quantity == 30:
-            query = group.search(
-                Query()['id'] == callback_query.message.chat.id)
-            if query[0]['myfilms'] == True:
-                app.send_message(callback_query.message.chat.id, f"Complementi {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name}, sei arrivato ai 30 biscotti🎉🎊.\nHai vinto il premio messo in palio dal progetto MyFilms che collabora con noi. Per ritirare il tuo mese gratuito contatta @Mario_Myfilms, ti guiderà lui.\n\nPer tutti gli altri utenti incuriositi del progetto che vorrebbero avere ulteriori info, potete contattare @Mario_Myfilms! (anche perchè ai non vincitori spetta comunque una promo 🌚)\n\nIn bocca al lupo al prossimo vincitore 😁\n\n❕*Ovviamente il vincitore attuale è escluso dalle vincite per i prossimi mesi.*\n** *Il vincitore può anche rifiutare il premio scegliendo se passarlo al secondo classificato o ad un utente a caso;* **")
-            else:
-                app.send_message(callback_query.message.chat.id,
-                                 f"Complementi {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name}, sei arrivato ai 30 biscotti perciò hai vinto questa sessione!🎉🎊")
-            app.send_message(
-                log_group, f"{'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.first_name} è arrivato a 30 biscotti! Database resettato.")
-            win(callback_query)
-            session.update({'session': sessionqa+1}, Query()
-                            ['id_user'] == callback_query.from_user.id)
-            cookie.update({'session': sessionqa+1}, Query()
-                            ['id_user'] == callback_query.from_user.id)
-            cookie.truncate()
+                'id_user'] == callback_query.from_user.id)
+        verify_win(callback_query)
     group.update({'name': callback_query.message.chat.title},
                  Query()['id'] == callback_query.message.chat.id)
     select_group()
