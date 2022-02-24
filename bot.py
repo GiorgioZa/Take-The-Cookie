@@ -105,7 +105,7 @@ def found_admin(id):
 
 def dev(message):
     app.send_message(
-        message.chat.id, "Versione biscotti: 2.0.3\n\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️\n\nUltime info sul bot -> <a href='https://t.me/TakeTheCookie'>canale ufficiale</a>")
+        message.chat.id, "Versione biscotti: 2.0.4\n\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️\n\nUltime info sul bot -> <a href='https://t.me/TakeTheCookie'>canale ufficiale</a>")
     return
 
 
@@ -152,13 +152,17 @@ def expired(bisquit):
     takenb = True
     app.edit_message_reply_markup(bisquit.chat.id, bisquit.message_id, InlineKeyboardMarkup([[
         InlineKeyboardButton("Mangia il biscotto!🤔🍪", callback_data="expired")]]))
+
+    try:
+        app.send_message(log_group, f"{bisquit.chat.title} ha aspettato troppo tempo. il biscotto è andato a male!")
+    except:
+        pass
     try:
         scheduler.remove_job(f'expired{bisquit.chat.id}')
     except:
         app.send_message(log_group,
-                         "non sono riuscito a modificare la tastiera del biscotto marcio!")
+                         "non sono riuscito a modificare lo scheduler del biscotto marcio!")
     select_group()
-    biscotto(group_id)
     return
 
 
@@ -200,7 +204,7 @@ def expired_query(client, callback_query):
     random.seed()
     if random.choice([True, False]) == True:
         try:
-            scheduler.remove_job('expired')
+            scheduler.remove_job(f'expired{callback_query.message.chat.id}')
         except:
             pass
         app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
@@ -322,7 +326,7 @@ def biscotto(chat_group):
         write_last_group(group_id)
         try:
             scheduler.add_job(expired, 'interval',  hours=1,
-                              args=(bisquit,), id=f"expired{chat_group}", replace_existing=True)
+                              args=(bisquit,), id=f"expired{chat_group}")
         except:
             app.send_message(log_group,
                              "non sono riuscito a creare lo scheduler per i biscotti scaduti :(")
@@ -430,6 +434,7 @@ def select_group():
         elif len(selected) == 1:
             group_id = selected[0]
         else:
+            group_id = "0"
             ini()
             return
     elif len(query) == 1:
@@ -648,6 +653,10 @@ def taken(client, callback_query):
         pass
     try:
         scheduler.remove_job('expired')
+    except:
+        pass
+    try:
+        scheduler.remove_job(f'expired{callback_query.message.chat.id}')
     except:
         pass
     unicity = False
