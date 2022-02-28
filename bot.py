@@ -45,7 +45,7 @@ date = []
 
 app = Client(
     "take_the_cookie",
-    bot_token="5084314234:AAH00A3Tvmk8Cqb2ok5E1gh8Gh7TDkYXzHU",
+    bot_token="TOKEN HERE",
     sleep_threshold=50
 )
 
