@@ -5,7 +5,8 @@ from pytz import timezone
 import os.path
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from pyrogram import Client, filters
+from pyrogram import Client, filters, errors
+
 from pyrogram.types import (InlineKeyboardButton, InlineKeyboardMarkup,
                             ReplyKeyboardMarkup)
 from tinydb import Query, TinyDB, queries
@@ -44,8 +45,8 @@ result = []
 date = []
 
 app = Client(
-    "take_the_cookie",
-    bot_token="TOKEN HERE",
+    "<NAME OF BOT HERE>",
+    bot_token="<BOT TOKEN HERE>",
     sleep_threshold=50
 )
 
@@ -76,10 +77,11 @@ def create_date(seconds):
 
 def start_scheduler():
     if group_id == "0":
-        scheduler.add_job(main, 'interval',  seconds=5,
+        scheduler.add_job(main, 'interval',  seconds=10,
                           id='main', replace_existing=True)
     else:
-           scheduler.add_job(biscotto, 'interval',  seconds=10, args=(group_id,), id='biscotto', replace_existing=True)
+        scheduler.add_job(biscotto, 'interval',  seconds=10, args=(
+            group_id,), id='biscotto', replace_existing=True)
     try:
         scheduler.start()
     except:
@@ -152,18 +154,15 @@ def expired(bisquit):
     takenb = True
     app.edit_message_reply_markup(bisquit.chat.id, bisquit.message_id, InlineKeyboardMarkup([[
         InlineKeyboardButton("Mangia il biscotto!🤔🍪", callback_data="expired")]]))
-
-    try:
-        app.send_message(LOG_GROUP, f"{bisquit.chat.title} ha aspettato troppo tempo. il biscotto è andato a male!")
-    except:
-        pass
+    app.send_message(
+        LOG_GROUP, f"{bisquit.chat.title} ha aspettato troppo tempo. il biscotto è andato a male!")
     try:
         scheduler.remove_job(f'expired{bisquit.chat.id}')
     except:
         app.send_message(LOG_GROUP,
                          "non sono riuscito a modificare lo scheduler del biscotto marcio!")
     select_group()
-    if group_id!="0":
+    if group_id != "0":
         biscotto(group_id)
     return
 
@@ -211,7 +210,6 @@ def expired_query(client, callback_query):
             pass
         app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
                               f"Avendo mangiato un biscotto avariato🤢, {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.mention()} ha avuto problemi di stomaco e quindi ha perso un biscotto dalla classifica generale!\n\nPress F to pay respect!")
-        unicityex = False
         callback_query.answer(
             "Mi dispiace, questo biscotto ha atteso per troppo tempo che qualcuno lo mangiasse e quindi è avariato🥺🤢... Sei stato avvelenato, hai vomitato e hai perso dei biscotti!", show_alert=True)
         bisquit = cookie.search(
@@ -233,7 +231,6 @@ def expired_query(client, callback_query):
     else:
         app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
                               f"Il 🍪 avariato è stato mangiato da {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.mention()} senza conseguenze🎉!")
-        unicityex = False
         callback_query.answer(
             f"WOW😳, caro {callback_query.from_user.first_name} che fortuna! Hai divorato il biscotto avariato senza conseguenze!", show_alert=True)
         app.send_message(LOG_GROUP,
@@ -280,6 +277,7 @@ def expired_query(client, callback_query):
         else:
             cookie.update({'propic': "true"}, Query()[
                 'id_user'] == callback_query.from_user.id)
+    unicityex = False
     return
 
 
@@ -317,10 +315,7 @@ def biscotto(chat_group):
             app.send_message(LOG_GROUP,
                              f"ho inviato biscotto nel gruppo: '{gruppo.title}'")
         except:
-            try:
-                group.remove(Query()['id'] == chat_group)
-            except:
-                pass
+            group.remove(Query()['id'] == chat_group)
             app.send_message(LOG_GROUP,
                              f"non ho inviato il biscotto nel gruppo {gruppo.title} perchè ho avuto un problema")
             main()
@@ -339,11 +334,10 @@ def biscotto(chat_group):
         data = create_data()
         group.update({'date': data, 'biscotti': nbiscotti+1},
                      Query()['id'] == group_id)
-        temp_bet = bet.all()
-        for element in temp_bet:
-            if element['id_group'] == chat_group:
-                bet.update({'result': 'SI'}, Query()['id_group'] == chat_group)
-                remove_before(chat_group)
+        temp_bet = bet.search(Query()['id_group'] == group_id)
+        if temp_bet != []:
+            bet.update({'result': 'SI'}, Query()['id_group'] == chat_group)
+            remove_before(chat_group)
     else:
         main()
 
@@ -388,8 +382,8 @@ def add_group(message):
 
 def scheduler_new_date():
     random.seed(time.time())
-    a = random.randrange(2, 5)  # da 2 a 4 ore
-    b = random.randrange(0, 60)  # da 0 a 59 minuti
+    a = random.randrange(0, 5)  # da 0 a 4 ore
+    b = random.randrange(10, 60)  # da 10 a 59 minuti
     c = random.randrange(0, 60)  # da 0 a 59 secondi
     try:
         scheduler.remove_job('biscotto')
@@ -400,9 +394,16 @@ def scheduler_new_date():
                           seconds=c, args=(group_id,), id='biscotto')
         app.send_message(LOG_GROUP,
                          f"Prossimo biscotto tra: {a}h:{b}m:{c}s")
-
     except:
         main()
+
+
+def log_message(message):
+    try:
+        scheduler.remove_job("log")
+    except:
+        pass
+    app.send_message(LOG_GROUP, message)
 
 
 def select_group():
@@ -411,9 +412,14 @@ def select_group():
     query = group.all()
     selected = []
     if len(query) >= 2:
-        srand = random.randrange(50, 61)
+        srand = random.randrange(0, 101)
         for gruppi in query:
-            temp_info = app.get_chat_members_count(gruppi['id'])
+            try:
+                temp_info = app.get_chat_members_count(gruppi['id'])
+            except errors.ChannelInvalid or errors.ChannelPrivate:
+                group.remove(Query()['id'] == gruppi['id'])
+                scheduler.add_job(log_message, 'interval', seconds=5, args=(
+                    f"Ho rimosso il gruppo {gruppi['name']} dal database!",), id='log')
             if srand < 50:  # 0 a 49
                 if temp_info > 500:  # +500
                     selected.append(gruppi['id'])
@@ -437,17 +443,14 @@ def select_group():
             group_id = selected[0]
         else:
             group_id = "0"
-            ini()
+            select_group()
             return
     elif len(query) == 1:
         group_id = query[0]['id']
     elif len(query) <= 0:
         group_id = "0"
-        try:
-            app.send_message(LOG_GROUP,
-                             "Nessun gruppo selezionato per ricevere il biscotto")
-        except:
-            pass
+        app.send_message(LOG_GROUP,
+                         "Nessun gruppo selezionato per ricevere il biscotto")
         return
     i = 0
     list_group = read_file()
@@ -461,12 +464,9 @@ def select_group():
             group_id = "0"
             select_group()
             return
-    try:
-        temp = app.get_chat(group_id)
-        app.send_message(LOG_GROUP,
-                         f"Il prossimo gruppo in cui verrà inviato il biscotto è: {temp.title}")
-    except:
-        print("errore")
+    temp = app.get_chat(group_id)
+    app.send_message(LOG_GROUP,
+                     f"Il prossimo gruppo in cui verrà inviato il biscotto è: {temp.title}")
 
 
 def write_last_group(group_id):
@@ -549,33 +549,34 @@ def remove_before(chatgroup):
     tp = app.get_chat(chatgroup)
     gruppo = bet.search(Query()['id_group'] == chatgroup)
     if gruppo[0]['announce'] == False:
-        try:
-            poll_result = app.stop_poll(
-                gruppo[0]['id_group'], gruppo[0]['id_poll'])
-        except:
-            app.send_message(LOG_GROUP,
-                             f"Non posso chiudere questo sondaggio anticipatamente: {tp.title}, {gruppo[0]['id_poll']}")
-            return
-        temp = []
-        for results in poll_result['options']:
-            temp = {
-                'value': results.text,
-                'result': results.voter_count
-            }
-            result.append(temp)
-        result.sort(reverse=True, key=get_result)
-        if result[0]['result'] == result[1]['result']:
-            app.send_message(
-                gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
-            app.send_message(LOG_GROUP,
-                             f"Parità raggiunta anticipatamente in questo gruppo: {tp.title}")
-        else:
-            app.send_message(
-                gruppo[0]['id_group'], f"Risultato del sondaggio:\n-{result[0]['value']}: {result[0]['result']}\n-{result[1]['value']}: {result[1]['result']}\n\nHa vinto il {result[0]['value']}!")
-            bet.update({'choice': result[0]['value']}, Query()[
-                'id_group'] == gruppo[0]['id_group'])
-            app.send_message(LOG_GROUP,
-                             f"In questo gruppo, il sondaggio si è chiuso positivamente anticipatamente: {tp.title}")
+        if gruppo[0]['choice'] == None:
+            try:
+                poll_result = app.stop_poll(
+                    gruppo[0]['id_group'], gruppo[0]['id_poll'])
+            except:
+                app.send_message(LOG_GROUP,
+                                 f"Non posso chiudere questo sondaggio anticipatamente: {tp.title}, {gruppo[0]['id_poll']}")
+                return
+            temp = []
+            for results in poll_result['options']:
+                temp = {
+                    'value': results.text,
+                    'result': results.voter_count
+                }
+                result.append(temp)
+            result.sort(reverse=True, key=get_result)
+            if result[0]['result'] == result[1]['result']:
+                app.send_message(
+                    gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
+                app.send_message(LOG_GROUP,
+                                 f"Parità raggiunta anticipatamente in questo gruppo: {tp.title}")
+            else:
+                app.send_message(
+                    gruppo[0]['id_group'], f"Risultato del sondaggio:\n-{result[0]['value']}: {result[0]['result']}\n-{result[1]['value']}: {result[1]['result']}\n\nHa vinto il {result[0]['value']}!")
+                bet.update({'choice': result[0]['value']}, Query()[
+                    'id_group'] == gruppo[0]['id_group'])
+                app.send_message(LOG_GROUP,
+                                 f"In questo gruppo, il sondaggio si è chiuso positivamente anticipatamente: {tp.title}")
         result = []
         find_result(chatgroup)
 
@@ -661,7 +662,6 @@ def taken(client, callback_query):
         scheduler.remove_job(f'expired{callback_query.message.chat.id}')
     except:
         pass
-    unicity = False
     app.send_message(LOG_GROUP,
                      f"Biscotto del gruppo: {callback_query.message.chat.title} riscattato da: {callback_query.from_user.username if callback_query.from_user.username!=None else callback_query.from_user.first_name}")
     takenb = True
@@ -716,6 +716,7 @@ def taken(client, callback_query):
                  Query()['id'] == callback_query.message.chat.id)
     select_group()
     scheduler_new_date()
+    unicity = False
 
 
 @app.on_message((filters.private) & filters.command("start"))
