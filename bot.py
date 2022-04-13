@@ -2,7 +2,7 @@ import random
 import time
 from datetime import datetime, timedelta
 from pytz import timezone
-import os.path
+import os.path, sys
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, errors
@@ -14,7 +14,7 @@ from tinydb import Query, TinyDB, queries
 scheduler = BackgroundScheduler()
 
 group_id = "0"
-
+sys.setrecursionlimit(1500)
 temp = open("super_user.txt", "r").read().split(", ")
 SUPER_USER = [eval(x) for x in temp]
 LOG_GROUP = int(open("log_group.txt", "r").read())
@@ -107,7 +107,7 @@ def found_admin(id):
 
 def dev(message):
     app.send_message(
-        message.chat.id, "Versione biscotti: 2.0.4\n\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️\n\nUltime info sul bot -> <a href='https://t.me/TakeTheCookie'>canale ufficiale</a>")
+        message.chat.id, "Versione biscotti: 2.0.3.1\n\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️\n\nUltime info sul bot -> <a href='https://t.me/TakeTheCookie'>canale ufficiale</a>")
     return
 
 
@@ -382,7 +382,7 @@ def add_group(message):
 
 def scheduler_new_date():
     random.seed(time.time())
-    a = random.randrange(0, 5)  # da 0 a 4 ore
+    a = random.randrange(0, 3)  # da 0 a 2 ore
     b = random.randrange(10, 60)  # da 10 a 59 minuti
     c = random.randrange(0, 60)  # da 0 a 59 secondi
     try:
@@ -399,11 +399,12 @@ def scheduler_new_date():
 
 
 def log_message(message):
-    try:
-        scheduler.remove_job("log")
-    except:
-        pass
     app.send_message(LOG_GROUP, message)
+
+
+def remove_error(gruppo):
+    group.remove(Query()['id'] == gruppo['id'])
+    log_message(f"Ho rimosso il gruppo {gruppo['name']} dal database!")
 
 
 def select_group():
@@ -416,26 +417,26 @@ def select_group():
         for gruppi in query:
             try:
                 temp_info = app.get_chat_members_count(gruppi['id'])
-            except errors.ChannelInvalid or errors.ChannelPrivate:
-                group.remove(Query()['id'] == gruppi['id'])
-                scheduler.add_job(log_message, 'interval', seconds=5, args=(
-                    f"Ho rimosso il gruppo {gruppi['name']} dal database!",), id='log')
+            except errors.ChannelInvalid:
+                remove_error(gruppi)
+            except errors.ChannelPrivate:
+                remove_error(gruppi)
             if srand < 50:  # 0 a 49
                 if temp_info > 500:  # +500
                     selected.append(gruppi['id'])
-                continue
+                    continue
             elif srand < 50 + 2:  # 50 a 51
                 if temp_info < 10:  # 0 a 9
                     selected.append(gruppi['id'])
-                continue
+                    continue
             elif srand < 50 + 2 + 10:  # 52 a 61
                 if temp_info > 10 and temp_info < 50:  # 10 a 49
                     selected.append(gruppi['id'])
-                continue
+                    continue
             elif srand <= 50 + 2 + 10 + 38:  # 62 a 100
                 if temp_info > 50 and temp_info < 500:  # da 50 a 499
                     selected.append(gruppi['id'])
-                continue
+                    continue
         if len(selected) >= 2:
             gruppe = random.randrange(0, len(selected))
             group_id = selected[gruppe]
@@ -454,13 +455,13 @@ def select_group():
         return
     i = 0
     list_group = read_file()
-    if list_group != None and len(list_group) >= 5:
+    if list_group != None and len(list_group) >= 6:
         for gruppoid in list_group:
             if gruppoid != str(group_id):
                 i += 1
             else:
                 i = 0
-        if i < 4:
+        if i < (len(group)/3):
             group_id = "0"
             select_group()
             return
