@@ -461,7 +461,7 @@ def select_group():
                 i += 1
             else:
                 i = 0
-        if i < (len(group)/3):
+        if i < (len(list_group)/3):
             group_id = "0"
             select_group()
             return
