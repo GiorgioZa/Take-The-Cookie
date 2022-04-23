@@ -1,8 +1,6 @@
-import random
-import time
+import random, time, os.path, sys
 from datetime import datetime, timedelta
 from pytz import timezone
-import os.path, sys
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import Client, filters, errors
@@ -18,20 +16,6 @@ sys.setrecursionlimit(1500)
 temp = open("super_user.txt", "r").read().split(", ")
 SUPER_USER = [eval(x) for x in temp]
 LOG_GROUP = int(open("log_group.txt", "r").read())
-
-
-def read_file():
-    try:
-        f = open("last_group.txt", "r")
-        last_group_id = f.read().split(",")
-        f.close()
-        for element in last_group_id:
-            if element == "":
-                last_group_id.remove(element)
-        return last_group_id
-    except FileNotFoundError:
-        return None
-
 
 takenb = True
 cookie = TinyDB("cookie.json")
@@ -107,7 +91,7 @@ def found_admin(id):
 
 def dev(message):
     app.send_message(
-        message.chat.id, "Versione biscotti: 2.0.3.1\n\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️\n\nUltime info sul bot -> <a href='https://t.me/TakeTheCookie'>canale ufficiale</a>")
+        message.chat.id, "Versione biscotti: 2.0.3.2\n\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️\n\nUltime info sul bot -> <a href='https://t.me/TakeTheCookie'>canale ufficiale</a>")
     return
 
 
@@ -202,7 +186,6 @@ def expired_query(client, callback_query):
     if unicityex == True:
         return
     unicityex = True
-    random.seed()
     if random.choice([True, False]) == True:
         try:
             scheduler.remove_job(f'expired{callback_query.message.chat.id}')
@@ -320,7 +303,6 @@ def biscotto(chat_group):
                              f"non ho inviato il biscotto nel gruppo {gruppo.title} perchè ho avuto un problema")
             main()
             return
-        write_last_group(group_id)
         try:
             scheduler.add_job(expired, 'interval',  hours=1,
                               args=(bisquit,), id=f"expired{chat_group}")
@@ -381,7 +363,6 @@ def add_group(message):
 
 
 def scheduler_new_date():
-    random.seed(time.time())
     a = random.randrange(0, 3)  # da 0 a 2 ore
     b = random.randrange(10, 60)  # da 10 a 59 minuti
     c = random.randrange(0, 60)  # da 0 a 59 secondi
@@ -409,7 +390,6 @@ def remove_error(gruppo):
 
 def select_group():
     global group_id
-    random.seed(time.time())
     query = group.all()
     selected = []
     if len(query) >= 2:
@@ -419,21 +399,23 @@ def select_group():
                 temp_info = app.get_chat_members_count(gruppi['id'])
             except errors.ChannelInvalid:
                 remove_error(gruppi)
+                continue
             except errors.ChannelPrivate:
                 remove_error(gruppi)
-            if srand < 50:  # 0 a 49
+                continue
+            if srand < 40:  # 0 a 39   (40%)
                 if temp_info > 500:  # +500
                     selected.append(gruppi['id'])
                     continue
-            elif srand < 50 + 2:  # 50 a 51
+            elif srand < 40 + 5:  # 40 a 44     (5%)
                 if temp_info < 10:  # 0 a 9
                     selected.append(gruppi['id'])
                     continue
-            elif srand < 50 + 2 + 10:  # 52 a 61
+            elif srand < 40 + 5 + 22:  # 45 a 67    (22%)
                 if temp_info > 10 and temp_info < 50:  # 10 a 49
                     selected.append(gruppi['id'])
                     continue
-            elif srand <= 50 + 2 + 10 + 38:  # 62 a 100
+            elif srand <= 40 + 5 + 22 + 33:  # 67 a 100     (33%)
                 if temp_info > 50 and temp_info < 500:  # da 50 a 499
                     selected.append(gruppi['id'])
                     continue
@@ -453,37 +435,9 @@ def select_group():
         app.send_message(LOG_GROUP,
                          "Nessun gruppo selezionato per ricevere il biscotto")
         return
-    i = 0
-    list_group = read_file()
-    if list_group != None and len(list_group) >= 6:
-        for gruppoid in list_group:
-            if gruppoid != str(group_id):
-                i += 1
-            else:
-                i = 0
-        if i < (len(list_group)/3):
-            group_id = "0"
-            select_group()
-            return
     temp = app.get_chat(group_id)
     app.send_message(LOG_GROUP,
                      f"Il prossimo gruppo in cui verrà inviato il biscotto è: {temp.title}")
-
-
-def write_last_group(group_id):
-    list_group = read_file()
-    if list_group != None:
-        list_group.append(str(group_id))
-        os.remove("last_group.txt")
-        f = open("last_group.txt", "a")
-        for element in list_group:
-            f.write(f"{element},")
-        f.close()
-    else:
-        f = open("last_group.txt", "a")
-        f.write(f"{group_id},")
-        f.close()
-    return
 
 
 def find_result(chat_group):
