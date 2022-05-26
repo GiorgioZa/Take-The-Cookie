@@ -1,4 +1,7 @@
-import random, time, os.path, sys
+import random
+import time
+import os.path
+import sys
 from datetime import datetime, timedelta
 from pytz import timezone
 
@@ -29,8 +32,8 @@ result = []
 date = []
 
 app = Client(
-    "<NAME OF BOT HERE>",
-    bot_token="<BOT TOKEN HERE>",
+    "take_the_cookie",
+    bot_token="5084314234:AAFiNrCPdZUu7PvjJG5yfoSQzRWHszOVmsg",
     sleep_threshold=50
 )
 
@@ -143,8 +146,8 @@ def expired(bisquit):
     try:
         scheduler.remove_job(f'expired{bisquit.chat.id}')
     except:
-        app.send_message(LOG_GROUP,
-                         "non sono riuscito a modificare lo scheduler del biscotto marcio!")
+        log_message(
+            "non sono riuscito a modificare lo scheduler del biscotto marcio!")
     select_group()
     if group_id != "0":
         biscotto(group_id)
@@ -216,8 +219,8 @@ def expired_query(client, callback_query):
                               f"Il 🍪 avariato è stato mangiato da {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.mention()} senza conseguenze🎉!")
         callback_query.answer(
             f"WOW😳, caro {callback_query.from_user.first_name} che fortuna! Hai divorato il biscotto avariato senza conseguenze!", show_alert=True)
-        app.send_message(LOG_GROUP,
-                         f"Biscotto del gruppo: {callback_query.message.chat.title} riscattato da: {callback_query.from_user.username if callback_query.from_user.username!=None else callback_query.from_user.first_name}")
+        log_message(
+            f"Biscotto del gruppo: {callback_query.message.chat.title} riscattato da: {callback_query.from_user.username if callback_query.from_user.username!=None else callback_query.from_user.first_name}")
         total = 0
         sessionqa = 0
         bisquit = cookie.search(
@@ -282,8 +285,8 @@ def biscotto(chat_group):
         a = group.search(Query()['id'] == group_id)
         gruppo = app.get_chat(chat_group)
         if a == []:
-            app.send_message(LOG_GROUP,
-                             f"a quanto pare {gruppo.title} non esiste più nel database, provo a cambiare gruppo")
+            log_message(
+                f"a quanto pare {gruppo.title} non esiste più nel database, provo a cambiare gruppo")
             main()
             return
         try:
@@ -295,20 +298,19 @@ def biscotto(chat_group):
                                            ]))
             takenb = False
             unicity = False
-            app.send_message(LOG_GROUP,
-                             f"ho inviato biscotto nel gruppo: '{gruppo.title}'")
+            log_message(f"ho inviato biscotto nel gruppo: '{gruppo.title}'")
         except:
             group.remove(Query()['id'] == chat_group)
-            app.send_message(LOG_GROUP,
-                             f"non ho inviato il biscotto nel gruppo {gruppo.title} perchè ho avuto un problema")
+            log_message(
+                f"non ho inviato il biscotto nel gruppo {gruppo.title} perchè ho avuto un problema")
             main()
             return
         try:
             scheduler.add_job(expired, 'interval',  hours=1,
                               args=(bisquit,), id=f"expired{chat_group}")
         except:
-            app.send_message(LOG_GROUP,
-                             "non sono riuscito a creare lo scheduler per i biscotti scaduti :(")
+            log_message(
+                "non sono riuscito a creare lo scheduler per i biscotti scaduti :(")
         try:
             nbiscotti = a[0]['biscotti']
         except:
@@ -348,8 +350,8 @@ def add_group(message):
                              'biscotti': 0, 'hidden': False, 'myfilms': False})
                 app.send_message(
                     message.chat.id, "Gruppo aggiunto! Da adesso può ricevere biscotti in qualsiasi momento... Tenete gli occhi aperti👀")
-                app.send_message(LOG_GROUP,
-                                 f"Ho aggiunto un nuovo gruppo: {chat.title} da parte di: {message.from_user.username if message.from_user.username!=None else message.from_user.firstname}")
+                log_message(
+                    f"Ho aggiunto un nuovo gruppo: {chat.title} da parte di: {message.from_user.username if message.from_user.username!=None else message.from_user.firstname}")
             else:
                 app.send_message(
                     message.chat.id, "Questo gruppo è troppo piccolo per questo bot! Contatta @GiorgioZa per ulteriori informazioni.")
@@ -363,9 +365,9 @@ def add_group(message):
 
 
 def scheduler_new_date():
-    a = random.randrange(0, 3)  # da 0 a 2 ore
+    a = random.randrange(3)  # da 0 a 2 ore
     b = random.randrange(10, 60)  # da 10 a 59 minuti
-    c = random.randrange(0, 60)  # da 0 a 59 secondi
+    c = random.randrange(60)  # da 0 a 59 secondi
     try:
         scheduler.remove_job('biscotto')
     except:
@@ -373,8 +375,7 @@ def scheduler_new_date():
     try:
         scheduler.add_job(biscotto, 'interval', hours=a, minutes=b,
                           seconds=c, args=(group_id,), id='biscotto')
-        app.send_message(LOG_GROUP,
-                         f"Prossimo biscotto tra: {a}h:{b}m:{c}s")
+        log_message(f"Prossimo biscotto tra: {a}h:{b}m:{c}s")
     except:
         main()
 
@@ -390,10 +391,12 @@ def remove_error(gruppo):
 
 def select_group():
     global group_id
+    last_group = group_id
     query = group.all()
     selected = []
     if len(query) >= 2:
-        srand = random.randrange(0, 101)
+        random.seed()
+        srand = random.randrange(101)
         for gruppi in query:
             try:
                 temp_info = app.get_chat_members_count(gruppi['id'])
@@ -420,8 +423,7 @@ def select_group():
                     selected.append(gruppi['id'])
                     continue
         if len(selected) >= 2:
-            gruppe = random.randrange(0, len(selected))
-            group_id = selected[gruppe]
+            group_id = selected[random.randrange(len(selected))]
         elif len(selected) == 1:
             group_id = selected[0]
         else:
@@ -432,12 +434,15 @@ def select_group():
         group_id = query[0]['id']
     elif len(query) <= 0:
         group_id = "0"
-        app.send_message(LOG_GROUP,
-                         "Nessun gruppo selezionato per ricevere il biscotto")
+        log_message("Nessun gruppo selezionato per ricevere il biscotto")
         return
-    temp = app.get_chat(group_id)
-    app.send_message(LOG_GROUP,
-                     f"Il prossimo gruppo in cui verrà inviato il biscotto è: {temp.title}")
+    if group_id == last_group:
+        log_message("Gruppo scelto uguale al precedente!")
+        select_group()
+    else:
+        temp = app.get_chat(group_id)
+        log_message(
+            f"Il prossimo gruppo in cui verrà inviato il biscotto è: {temp.title}")
 
 
 def find_result(chat_group):
@@ -450,8 +455,7 @@ def find_result(chat_group):
                     chat_group, "Complimenti! Questo gruppo ha vinto la scommessa della giornata!!")
                 bet.update({'announce': True}, Query()
                            ['id_group'] == chat_group)
-                app.send_message(LOG_GROUP,
-                                 f"Scommessa vinta in : {gruppo.title}")
+                log_message(f"Scommessa vinta in : {gruppo.title}")
                 global takenb
                 takenb = True
                 biscotto(chat_group)
@@ -461,16 +465,15 @@ def find_result(chat_group):
                     chat_group, "Oh no! Hai perso la scommessa di giornata *sad cookie intensifies*")
                 bet.update({'announce': True}, Query()
                            ['id_group'] == chat_group)
-                app.send_message(LOG_GROUP,
-                                 f"Scommessa persa in : {gruppo.title}")
+                log_message(f"Scommessa persa in : {gruppo.title}")
 
 
 def time_check():
     try:
         scheduler.remove_job('timecheck')
     except:
-        app.send_message(LOG_GROUP,
-                         "Non sono riuscito a togliere lo scheduler che scansiona le vincite")
+        log_message(
+            "Non sono riuscito a togliere lo scheduler che scansiona le vincite")
     temp = bet.all()
     for gruppi in temp:
         find_result(gruppi['id_group'])
@@ -481,12 +484,19 @@ def bet_fun(message):
     id = message.chat.id
     gruppo = app.get_chat(id)
     if bet.search(Query()['id_group'] == id) == []:
-        id_poll = app.send_poll(
-            id, "Il gruppo riceverà almeno un biscotto da questo momento fino alla mezzanotte?\n(In caso di vittoria, il gruppo riceverà un biscotto aggiuntivo)", ['SI', 'NO'], False)
-        app.send_message(LOG_GROUP,
-                         f"Questo gruppo ha avviato un nuovo sondaggio: {gruppo.title}")
-        bet.insert({'id_group': id, 'id_poll': id_poll['message_id'],
-                    'choice': None, 'result': 'NO', 'announce': False})
+        try:
+            id_poll = app.send_poll(
+                id, "Il gruppo riceverà almeno un biscotto da questo momento fino alla mezzanotte?\n(In caso di vittoria, il gruppo riceverà un biscotto aggiuntivo)", ['SI', 'NO'], False)
+            log_message(
+                f"Questo gruppo ha avviato un nuovo sondaggio: {gruppo.title}")
+            bet.insert({'id_group': id, 'id_poll': id_poll['message_id'],
+                        'choice': None, 'result': 'NO', 'announce': False})
+        except errors.ChatSendPollForbidden:
+            app.send_message(
+                id, "Mi dispiace, non posso inviare sondaggi in questo gruppo. Controlla i permessi del gruppo. Nel caso l'opzione 'Inviare sondaggi' sia disattivata contatta @GiorgioZa .")
+            log_message(
+                f"In questo gruppo l'opione sondaggi è disattivata: {gruppo.title}")
+            return
     else:
         app.send_message(id,
                          "questo gruppo ha già fatto la scommessa di giornata")
@@ -509,8 +519,8 @@ def remove_before(chatgroup):
                 poll_result = app.stop_poll(
                     gruppo[0]['id_group'], gruppo[0]['id_poll'])
             except:
-                app.send_message(LOG_GROUP,
-                                 f"Non posso chiudere questo sondaggio anticipatamente: {tp.title}, {gruppo[0]['id_poll']}")
+                log_message(
+                    f"Non posso chiudere questo sondaggio anticipatamente: {tp.title}, {gruppo[0]['id_poll']}")
                 return
             temp = []
             for results in poll_result['options']:
@@ -523,15 +533,15 @@ def remove_before(chatgroup):
             if result[0]['result'] == result[1]['result']:
                 app.send_message(
                     gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
-                app.send_message(LOG_GROUP,
-                                 f"Parità raggiunta anticipatamente in questo gruppo: {tp.title}")
+                log_message(
+                    f"Parità raggiunta anticipatamente in questo gruppo: {tp.title}")
             else:
                 app.send_message(
                     gruppo[0]['id_group'], f"Risultato del sondaggio:\n-{result[0]['value']}: {result[0]['result']}\n-{result[1]['value']}: {result[1]['result']}\n\nHa vinto il {result[0]['value']}!")
                 bet.update({'choice': result[0]['value']}, Query()[
                     'id_group'] == gruppo[0]['id_group'])
-                app.send_message(LOG_GROUP,
-                                 f"In questo gruppo, il sondaggio si è chiuso positivamente anticipatamente: {tp.title}")
+                log_message(
+                    f"In questo gruppo, il sondaggio si è chiuso positivamente anticipatamente: {tp.title}")
         result = []
         find_result(chatgroup)
 
@@ -540,8 +550,8 @@ def remove(id_group):
     try:
         scheduler.remove_job('remove'+str(id_group))
     except:
-        app.send_message(LOG_GROUP,
-                         f"Non sono riuscito a rimuovere lo scheduler della chiusura scommesse")
+        log_message(
+            f"Non sono riuscito a rimuovere lo scheduler della chiusura scommesse")
         pass
     global result
     gruppo = bet.search(Query()['id_group'] == id_group)
@@ -553,8 +563,8 @@ def remove(id_group):
             poll_result = app.stop_poll(
                 gruppo[0]['id_group'], gruppo[0]['id_poll'])
         except:
-            app.send_message(LOG_GROUP,
-                             f"Non posso chiudere questo sondaggio: {group.title}, {gruppo[0]['id_poll']}")
+            log_message(
+                f"Non posso chiudere questo sondaggio: {group.title}, {gruppo[0]['id_poll']}")
             return
         temp = []
         for results in poll_result['options']:
@@ -567,15 +577,14 @@ def remove(id_group):
         if result[0]['result'] == result[1]['result']:
             app.send_message(
                 gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
-            app.send_message(LOG_GROUP,
-                             f"Parità raggiunta in questo gruppo: {group.title}")
+            log_message(f"Parità raggiunta in questo gruppo: {group.title}")
         else:
             app.send_message(
                 gruppo[0]['id_group'], f"Risultato del sondaggio:\n-{result[0]['value']}: {result[0]['result']}\n-{result[1]['value']}: {result[1]['result']}\n\nHa vinto il {result[0]['value']}!")
             bet.update({'choice': result[0]['value']}, Query()[
                 'id_group'] == gruppo[0]['id_group'])
-            app.send_message(LOG_GROUP,
-                             f"In questo gruppo, il sondaggio si è chiuso positivamente: {group.title}")
+            log_message(
+                f"In questo gruppo, il sondaggio si è chiuso positivamente: {group.title}")
         result = []
     today = datetime.now()
     if today.hour <= 23 and today.hour >= 0 and today.minute <= 59:
@@ -617,8 +626,8 @@ def taken(client, callback_query):
         scheduler.remove_job(f'expired{callback_query.message.chat.id}')
     except:
         pass
-    app.send_message(LOG_GROUP,
-                     f"Biscotto del gruppo: {callback_query.message.chat.title} riscattato da: {callback_query.from_user.username if callback_query.from_user.username!=None else callback_query.from_user.first_name}")
+    log_message(
+        f"Biscotto del gruppo: {callback_query.message.chat.title} riscattato da: {callback_query.from_user.username if callback_query.from_user.username!=None else callback_query.from_user.first_name}")
     takenb = True
     total = 0
     sessionqa = 0
@@ -709,8 +718,7 @@ def removec(client, message):
             group.remove(Query()['id'] == message.chat.id)
             app.send_message(
                 message.chat.id, "Ho rimosso questo gruppo dalla lista dei partecipanti! Se hai riscontrato problemi o non sei stato a tuo agio, contatta il creatore -> @GiorgioZa")
-            app.send_message(LOG_GROUP,
-                             f"Ho rimosso un nuovo gruppo: {message.chat.title}")
+            log_message(f"Ho rimosso un nuovo gruppo: {message.chat.title}")
         else:
             app.send_message(
                 message.chat.id, "Per usare questo bot, devi aggiungerlo ad un gruppo in cui tu sei admin!")
@@ -821,8 +829,7 @@ def info(client, message):
 
 @app.on_message(filters.chat(SUPER_USER) & filters.command("force_cookie"))
 def force_cookie(client, message):
-    app.send_message(LOG_GROUP,
-                     "Ho avviato la scelta manuale del biscotto")
+    log_message("Ho avviato la scelta manuale del biscotto")
     select_group()
     biscotto(group_id)
     return
@@ -830,16 +837,14 @@ def force_cookie(client, message):
 
 @app.on_message(filters.chat(SUPER_USER) & filters.command("force_close"))
 def force_result(client, message):
-    app.send_message(LOG_GROUP,
-                     "Ho avviato la chiusura delle scommesse manuali")
+    log_message("Ho avviato la chiusura delle scommesse manuali")
     time_check()
     return
 
 
 @app.on_message(filters.chat(SUPER_USER) & filters.command("force_group"))
 def force_group(client, message):
-    app.send_message(LOG_GROUP,
-                     "Ho avviato la scelta di prendere un nuovo gruppo")
+    log_message("Ho avviato la scelta di prendere un nuovo gruppo")
     select_group()
     scheduler_new_date()
     return
@@ -853,11 +858,11 @@ def force_send_cookie(client, message):
     info = info.replace("/manual_group ", "")
     query = group.search(Query()['id'] == int(info))
     if query == []:
-        app.send_message(LOG_GROUP, "gruppo non trovato")
+        log_message("gruppo non trovato")
     else:
         global group_id
         group_id = int(info)
-        app.send_message(LOG_GROUP, f"{query[0]['name']} è stato selezionato!")
+        log_message(f"{query[0]['name']} è stato selezionato!")
         scheduler_new_date()
 
 
