@@ -32,8 +32,8 @@ result = []
 date = []
 
 app = Client(
-    "take_the_cookie",
-    bot_token="5084314234:AAFiNrCPdZUu7PvjJG5yfoSQzRWHszOVmsg",
+    "<NAME OF BOT HERE>",
+    bot_token="<BOT TOKEN HERE>",
     sleep_threshold=50
 )
 
