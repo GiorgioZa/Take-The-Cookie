@@ -94,7 +94,7 @@ def found_admin(id):
 
 def dev(message):
     app.send_message(
-        message.chat.id, "Versione biscotti: 2.0.3.2\n\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️\n\nUltime info sul bot -> <a href='https://t.me/TakeTheCookie'>canale ufficiale</a>")
+        message.chat.id, "Versione biscotti: 2.0.3.3\n\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️\n\nUltime info sul bot -> <a href='https://t.me/TakeTheCookie'>canale ufficiale</a>")
     return
 
 
@@ -131,6 +131,7 @@ def create_list():
             user = app.get_users(totale[x]['id_user'])
             text += f"\n{'🥇' if x==0 else '🥈' if x==1 else '🥉' if x==2 else ''} {user.mention()}: {totale[x]['quantity']}"
         except:
+            text += f"\n{'🥇' if x==0 else '🥈' if x==1 else '🥉' if x==2 else ''} {totale[x]['username'] if totale[x]['username'] else totale[x]['user']}: {totale[x]['quantity']}"
             pass
     text += "\n\nPer vedere la classifica completa, visita il <a href='biscotti.uk.to'>sito</a>"
     return text
