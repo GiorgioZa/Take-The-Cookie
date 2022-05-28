@@ -73,10 +73,11 @@ def start_scheduler():
         scheduler.start()
     except:
         pass
+    time_scheduler()
 
 
 def welcome(message):
-    app.send_message(message.chat.id, "Questo bot ti permette di intrattenere il tuo gruppo con un gioco molto divertente.\nPer usare questo bot, devi aggiungerlo ad un gruppo in cui tu sei admin!")
+    app.send_message(message.chat.id, "Questo bot ti permette di intrattenere il tuo gruppo con un gioco molto divertente.\nPer usare questo bot, aggiungilo come amministratore ad un gruppo in cui tu sei admin!")
     return
 
 
@@ -132,7 +133,6 @@ def create_list():
             text += f"\n{'🥇' if x==0 else '🥈' if x==1 else '🥉' if x==2 else ''} {user.mention()}: {totale[x]['quantity']}"
         except:
             text += f"\n{'🥇' if x==0 else '🥈' if x==1 else '🥉' if x==2 else ''} {totale[x]['username'] if totale[x]['username'] else totale[x]['user']}: {totale[x]['quantity']}"
-            pass
     text += "\n\nPer vedere la classifica completa, visita il <a href='biscotti.uk.to'>sito</a>"
     return text
 
@@ -145,7 +145,7 @@ def expired(bisquit):
     app.send_message(
         LOG_GROUP, f"{bisquit.chat.title} ha aspettato troppo tempo. il biscotto è andato a male!")
     try:
-        scheduler.remove_job(f'expired{bisquit.chat.id}')
+        scheduler.remove_job(f'expired{bisquit.message_id}')
     except:
         log_message(
             "non sono riuscito a modificare lo scheduler del biscotto marcio!")
@@ -174,8 +174,7 @@ def verify_win(info):
         else:
             app.send_message(info.message.chat.id,
                              f"Complementi {'@'+info.from_user.username if info.from_user.username else info.from_user.first_name}, sei arrivato ai 30 biscotti perciò hai vinto questa sessione!🎉🎊")
-        app.send_message(
-            LOG_GROUP, f"{'@'+info.from_user.username if info.from_user.username else info.from_user.first_name} è arrivato a 30 biscotti! Database resettato.")
+        log_message(f"{'@'+info.from_user.username if info.from_user.username else info.from_user.first_name} è arrivato a 30 biscotti! Database resettato.")
         win(info)
         session.update({'session': sessionqa+1}, Query()
                        ['id_user'] == info.from_user.id)
@@ -191,10 +190,6 @@ def expired_query(client, callback_query):
         return
     unicityex = True
     if random.choice([True, False]) == True:
-        try:
-            scheduler.remove_job(f'expired{callback_query.message.chat.id}')
-        except:
-            pass
         app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
                               f"Avendo mangiato un biscotto avariato🤢, {'@'+callback_query.from_user.username if callback_query.from_user.username else callback_query.from_user.mention()} ha avuto problemi di stomaco e quindi ha perso un biscotto dalla classifica generale!\n\nPress F to pay respect!")
         callback_query.answer(
@@ -308,7 +303,7 @@ def biscotto(chat_group):
             return
         try:
             scheduler.add_job(expired, 'interval',  hours=1,
-                              args=(bisquit,), id=f"expired{chat_group}")
+                              args=(bisquit,), id=f"expired{bisquit.message_id}")
         except:
             log_message(
                 "non sono riuscito a creare lo scheduler per i biscotti scaduti :(")
@@ -408,7 +403,7 @@ def select_group():
                 remove_error(gruppi)
                 continue
             if srand < 40:  # 0 a 39   (40%)
-                if temp_info > 500:  # +500
+                if temp_info >= 500:  # +500
                     selected.append(gruppi['id'])
                     continue
             elif srand < 40 + 5:  # 40 a 44     (5%)
@@ -416,11 +411,11 @@ def select_group():
                     selected.append(gruppi['id'])
                     continue
             elif srand < 40 + 5 + 22:  # 45 a 67    (22%)
-                if temp_info > 10 and temp_info < 50:  # 10 a 49
+                if temp_info >= 10 and temp_info < 50:  # 10 a 49
                     selected.append(gruppi['id'])
                     continue
-            elif srand <= 40 + 5 + 22 + 33:  # 67 a 100     (33%)
-                if temp_info > 50 and temp_info < 500:  # da 50 a 499
+            elif srand <= 40 + 5 + 22 + 33:  # 68 a 100     (33%)
+                if temp_info >= 50 and temp_info < 500:  # da 50 a 499
                     selected.append(gruppi['id'])
                     continue
         if len(selected) >= 2:
@@ -587,6 +582,10 @@ def remove(id_group):
             log_message(
                 f"In questo gruppo, il sondaggio si è chiuso positivamente: {group.title}")
         result = []
+        time_scheduler()
+
+
+def time_scheduler():
     today = datetime.now()
     if today.hour <= 23 and today.hour >= 0 and today.minute <= 59:
         rimuovi = datetime(today.year, today.month,
@@ -624,7 +623,7 @@ def taken(client, callback_query):
     except:
         pass
     try:
-        scheduler.remove_job(f'expired{callback_query.message.chat.id}')
+        scheduler.remove_job(f'expired{callback_query.message.message_id}')
     except:
         pass
     log_message(
@@ -662,9 +661,8 @@ def taken(client, callback_query):
     else:
         quantity = bisquit[0]['quantity']
         quantity += 1
-        sessionqa = sessionv[0]['session']
         total = sessionv[0]['total_quantity']
-        cookie.update({'user': callback_query.from_user.first_name, 'quantity': quantity, 'session': sessionqa, 'username': f"{'@'+callback_query.from_user.username if callback_query.from_user.username else None}",
+        cookie.update({'user': callback_query.from_user.first_name, 'quantity': quantity, 'username': f"{'@'+callback_query.from_user.username if callback_query.from_user.username else None}",
                        'group': f"{'@'+callback_query.message.chat.username if callback_query.message.chat.username!=None else callback_query.message.chat.title}", 'group_id': callback_query.message.chat.id}, Query()['id_user'] == callback_query.from_user.id)
         session.update({'total_quantity': total+1}, Query()
                        ['id_user'] == callback_query.from_user.id)
@@ -885,7 +883,7 @@ def stats(client, message):
         app.send_message(message.chat.id, "Utente non trovato!")
         return
     app.send_message(
-        message.chat.id, f"Statisiche di {message.from_user.mention}:\n\nTotale biscotti: **{query[0]['total_quantity']}**\nTotale sessioni vinte: **{query[0]['session']}**", reply_markup=InlineKeyboardMarkup(
+        message.chat.id, f"Statistiche di {message.from_user.mention}:\n\nTotale biscotti: **{query[0]['total_quantity']}**\nTotale sessioni vinte: **{query[0]['session']}**", reply_markup=InlineKeyboardMarkup(
             [
                 [InlineKeyboardButton(
                     "Aggiorna", callback_data="update_stats")],
@@ -906,7 +904,7 @@ def edit(client, callback_query):
             pass
     else:
         try:
-            app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id, f"Statisiche di {callback_query.from_user.mention}:\n\nTotale biscotti: **{query[0]['total_quantity']}**\nTotale sessioni vinte: **{query[0]['session']}**", reply_markup=InlineKeyboardMarkup(
+            app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id, f"Statistiche di {callback_query.from_user.mention}:\n\nTotale biscotti: **{query[0]['total_quantity']}**\nTotale sessioni vinte: **{query[0]['session']}**", reply_markup=InlineKeyboardMarkup(
                 [
                     [InlineKeyboardButton(
                         "Aggiorna", callback_data="update_stats")],
