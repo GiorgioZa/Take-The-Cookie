@@ -292,7 +292,7 @@ def biscotto(chat_group):
                                                [InlineKeyboardButton(
                                                    "Mangia il biscotto!😋🍪", callback_data="taken")],
                                            ]))
-            takenb = False
+            takenb = False #TAKENB SI PUO RIMUOVERE PROBABILMENTE
             unicity = False
             log_message(f"ho inviato biscotto nel gruppo: '{gruppo.title}'")
         except:
@@ -316,8 +316,8 @@ def biscotto(chat_group):
                      Query()['id'] == group_id)
         temp_bet = bet.search(Query()['id_group'] == group_id)
         if temp_bet != []:
-            bet.update({'result': 'SI'}, Query()['id_group'] == chat_group)
-            remove_before(chat_group)
+            bet.update({'result': 'yes'}, Query()['id_group'] == chat_group)
+            remove(chat_group, True)
     else:
         main()
 
@@ -443,25 +443,20 @@ def select_group():
 
 def find_result(chat_group):
     query = bet.search(Query()['id_group'] == chat_group)
-    gruppo = app.get_chat(chat_group)
-    if query[0]['choice'] != None:
-        if query[0]['result'] == query[0]['choice']:
-            if query[0]['announce'] == False:
-                app.send_message(
-                    chat_group, "Complimenti! Questo gruppo ha vinto la scommessa della giornata!!")
-                bet.update({'announce': True}, Query()
-                           ['id_group'] == chat_group)
-                log_message(f"Scommessa vinta in : {gruppo.title}")
-                global takenb
-                takenb = True
-                biscotto(chat_group)
-        else:
-            if query[0]['announce'] == False:
-                app.send_message(
-                    chat_group, "Oh no! Hai perso la scommessa di giornata *sad cookie intensifies*")
-                bet.update({'announce': True}, Query()
-                           ['id_group'] == chat_group)
-                log_message(f"Scommessa persa in : {gruppo.title}")
+    text = "I vincitori della scommessa sono:"
+    if query[0]['result'] == None:
+        winner = query[0]['no_users']
+    else:
+        winner = query[0]['yes_users']
+    for element in winner:
+        user = cookie.search(Query()['id_user']==element['user_id'])
+        text+=f"\n- {user[0]['username'] if user[0]['username'] else user[0]['user']} "
+        text+=f"x{element['qta']} -> x{element['qta']*2}"
+        cookie.update({'quantity':element['qta']*2}, Query()['id_user']==element['user_id'])
+
+    text+="\nTroverete i biscotti accreditati direttamente, potete utilizzare il comando /stats per poter vedere la vostra quantità posseduta :)"
+    app.send_message(chat_group, text)
+    bet.update({'announce': True}, Query()['id_group'] == chat_group)
 
 
 def time_check():
@@ -476,112 +471,181 @@ def time_check():
     bet.truncate()
 
 
-def bet_fun(message):
+def bet_fun(message):  
     id = message.chat.id
     gruppo = app.get_chat(id)
     if bet.search(Query()['id_group'] == id) == []:
-        try:
-            id_poll = app.send_poll(
-                id, "Il gruppo riceverà almeno un biscotto da questo momento fino alla mezzanotte?\n(In caso di vittoria, il gruppo riceverà un biscotto aggiuntivo)", ['SI', 'NO'], False)
-            log_message(
-                f"Questo gruppo ha avviato un nuovo sondaggio: {gruppo.title}")
-            bet.insert({'id_group': id, 'id_poll': id_poll['message_id'],
-                        'choice': None, 'result': 'NO', 'announce': False})
-        except errors.ChatSendPollForbidden:
-            app.send_message(
-                id, "Mi dispiace, non posso inviare sondaggi in questo gruppo. Controlla i permessi del gruppo. Nel caso l'opzione 'Inviare sondaggi' sia disattivata contatta @GiorgioZa .")
-            log_message(
-                f"In questo gruppo l'opione sondaggi è disattivata: {gruppo.title}")
-            return
+        app.send_message(id, "Hai avviato una scommessa!\
+            \nRegole:\
+            \n1)Per giocare puoi usare i tuoi biscotti riscattati durante la sessione.\
+            \n2)Puoi scegliere **solo** una delle due opzioni; In caso di vittoria, la quantità puntata ti verrà doppiata!\
+            \n3)Hai solo 1h di tempo (o meno se il biscotto arriva prima della chiusura del sondaggio) per poter scommettere.\
+            \n4)Non puoi ritirare il voto quindi vota con attenzione 😝.\
+            \n5)Puoi puntare al massimo il quantitativo di biscotti necessario per arrivare al totale di 29 biscotti (sempre che tu ne abbia così tanti a disposizione ;) )")
+
+        id_poll = app.send_message(id, f"**'Il gruppo riceverà almeno un biscotto entro la mezzanotte?'**",reply_markup=InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("SI!🍪", callback_data="yes"),InlineKeyboardButton("NO!🥠", callback_data="nope")]
+            ]))
+        
+        log_message(f"Questo gruppo ha avviato un nuovo sondaggio: {gruppo.title}")
+        bet.insert({'id_group': id, 'id_poll': id_poll.message_id, 'yes_users': [], 'no_users': [], 'result':None, 'announce': False})
     else:
         app.send_message(id,
                          "questo gruppo ha già fatto la scommessa di giornata")
+        return
 
     try:
         scheduler.add_job(remove, 'interval', hours=1,
-                          args=(id,), id='remove'+str(id))
+                          args=(id,False,), id='remove'+str(id))
     except:
         pass
     return
 
 
-def remove_before(chatgroup):
-    global result
-    tp = app.get_chat(chatgroup)
-    gruppo = bet.search(Query()['id_group'] == chatgroup)
-    if gruppo[0]['announce'] == False:
-        if gruppo[0]['choice'] == None:
-            try:
-                poll_result = app.stop_poll(
-                    gruppo[0]['id_group'], gruppo[0]['id_poll'])
-            except:
-                log_message(
-                    f"Non posso chiudere questo sondaggio anticipatamente: {tp.title}, {gruppo[0]['id_poll']}")
-                return
-            temp = []
-            for results in poll_result['options']:
-                temp = {
-                    'value': results.text,
-                    'result': results.voter_count
-                }
-                result.append(temp)
-            result.sort(reverse=True, key=get_result)
-            if result[0]['result'] == result[1]['result']:
-                app.send_message(
-                    gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
-                log_message(
-                    f"Parità raggiunta anticipatamente in questo gruppo: {tp.title}")
-            else:
-                app.send_message(
-                    gruppo[0]['id_group'], f"Risultato del sondaggio:\n-{result[0]['value']}: {result[0]['result']}\n-{result[1]['value']}: {result[1]['result']}\n\nHa vinto il {result[0]['value']}!")
-                bet.update({'choice': result[0]['value']}, Query()[
-                    'id_group'] == gruppo[0]['id_group'])
-                log_message(
-                    f"In questo gruppo, il sondaggio si è chiuso positivamente anticipatamente: {tp.title}")
-        result = []
-        find_result(chatgroup)
+@app.on_callback_query(filters.regex("end"))
+def end_poll(client, callback_query):
+    callback_query.answer("Mi dispiace, non puoi più scommettere perchè è scaduto il tempo :(",show_alert=True)
+
+@app.on_callback_query(filters.regex("yes"))
+def yes_choice(client, callback_query):
+    test = cookie.search(Query()['id_user'] == callback_query.from_user.id)
+    if test == [] or test[0]['quantity']==0:
+        callback_query.answer("Mi dispiace, non puoi scommettere nessun biscotto perchè non ne possiedi :(\
+            \nRiscatta biscotti per poter scommettere e vincerne altri!",show_alert=True)
+        return
+    else:
+        is_there = bet.search((Query()['yes_users'].any(Query()['user_id']==callback_query.from_user.id)) & (Query()['id_group']== callback_query.message.chat.id))  #cerco se l'utente ha risposto al sondaggio nel gruppo
+        is_on_other_choice = bet.search((Query()['no_users'].any(Query()['user_id']==callback_query.from_user.id)) & (Query()['id_group']== callback_query.message.chat.id))  #cerco se l'utente ha risposto in altro modo al sondaggio nel gruppo
+        if is_on_other_choice!=[]:
+            callback_query.answer("Puoi scommettere solo su una risposta... Furbetto!😝", show_alert=True)
+            return
+        text = "**'Il gruppo riceverà almeno un biscotto entro la mezzanotte?'**"
+        group_bet_done = bet.search(Query()['id_group']== callback_query.message.chat.id)   #e il gruppo a cui si trova ha avviato un sondaggio
+        if is_there==[] and group_bet_done !=[]:    #utente nessuna scommessa, gruppo scommessa avviata
+            query = bet.search(Query()['id_group']== callback_query.message.chat.id)
+            tot_qta = []
+            for element in query[0]['yes_users']:
+                tot_qta.append(element)
+            bet_qta = {
+                "user_id": callback_query.from_user.id,
+                "qta": 1
+            }
+            tot_qta.append(bet_qta)
+            bet.update({'yes_users':tot_qta}, Query()['yes_users'].any([callback_query.from_user.id]) and Query()['id_group']== callback_query.message.chat.id)
+        elif is_there!=[] and group_bet_done !=[]:  #utente già scommesso nel sondaggio, gruppo scommessa avviata         
+            users = is_there[0]['yes_users']
+            for element in users:
+                if element['user_id'] == callback_query.from_user.id:
+                    if ((element['qta']+1)*2)+(test[0]['quantity']-1)<30:
+                        element['qta']+=1
+                    else:
+                        callback_query.answer("Hai raggiunto il massimo di puntate disponibili!")
+                        return
+            bet.update({'yes_users':users}, Query()['yes_users'].any([callback_query.from_user.id]) and Query()['id_group']== callback_query.message.chat.id) 
+        write(callback_query)
 
 
-def remove(id_group):
+@app.on_callback_query(filters.regex("nope"))
+def no_choice(client, callback_query):
+    test = cookie.search(Query()['id_user'] == callback_query.from_user.id)
+    if test == [] or test[0]['quantity']==0:
+        callback_query.answer("Mi dispiace, non puoi scommettere nessun biscotto perchè non ne possiedi :(\
+            \nRiscatta biscotti per poter scommettere e vincerne altri!",show_alert=True)
+        return
+    else:
+        is_there = bet.search((Query()['no_users'].any(Query()['user_id']==callback_query.from_user.id)) & (Query()['id_group']== callback_query.message.chat.id))  #cerco se l'utente ha risposto al sondaggio nel gruppo
+        is_on_other_choice = bet.search((Query()['yes_users'].any(Query()['user_id']==callback_query.from_user.id)) & (Query()['id_group']== callback_query.message.chat.id))  #cerco se l'utente ha risposto in altro modo al sondaggio nel gruppo
+        if is_on_other_choice!=[]:
+            callback_query.answer("Puoi scommettere solo su una risposta... Furbetto!😝", show_alert=True)
+            return
+        group_bet_done = bet.search(Query()['id_group']== callback_query.message.chat.id)   #e il gruppo a cui si trova ha avviato un sondaggio
+        if is_there==[] and group_bet_done !=[]:    #utente nessuna scommessa, gruppo scommessa avviata
+            query = bet.search(Query()['id_group']== callback_query.message.chat.id)
+            tot_qta = []
+            for element in query[0]['no_users']:
+                tot_qta.append(element)
+            bet_qta = {
+                "user_id": callback_query.from_user.id,
+                "qta": 1
+            }
+            tot_qta.append(bet_qta)
+            bet.update({'no_users':tot_qta}, Query()['no_users'].any([callback_query.from_user.id]) and Query()['id_group']== callback_query.message.chat.id)
+        elif is_there!=[] and group_bet_done !=[]:  #utente già scommesso nel sondaggio, gruppo scommessa avviata         
+            users = is_there[0]['no_users']
+            for element in users:
+                if element['user_id'] == callback_query.from_user.id:
+                    if ((element['qta']+1)*2)+(test[0]['quantity']-1)<30:
+                        element['qta']+=1
+                    else:
+                        callback_query.answer("Hai raggiunto il massimo di puntate disponibili!")
+                        return
+            bet.update({'no_users':users}, Query()['no_users'].any([callback_query.from_user.id]) and Query()['id_group']== callback_query.message.chat.id)
+        write(callback_query)
+
+
+def write(cquery):
+    test = cookie.search(Query()['id_user'] == cquery.from_user.id)
+    text = "**'Il gruppo riceverà almeno un biscotto entro la mezzanotte?'**"
+    all = bet.search(Query()['id_group']== cquery.message.chat.id)
+    nusers = all[0]['no_users']  
+    yusers = all[0]['yes_users']
+    for element in yusers:
+        user = cookie.search(Query()['id_user']==element['user_id'])
+        text+=f"\n- {user[0]['username'] if user[0]['username'] else user[0]['user']}: "
+        for x in range(element['qta']):
+            text+="🍪"
+    for element in nusers:
+        user = cookie.search(Query()['id_user']==element['user_id'])
+        text+=f"\n- {user[0]['username'] if user[0]['username'] else user[0]['user']}: "
+        for x in range(element['qta']):
+            text+="🥠"
+    cookie.update({'quantity':test[0]['quantity']-1}, Query()['id_user']==test[0]['id_user'])
+    try:
+        app.edit_message_text(cquery.message.chat.id, cquery.message.message_id, text, 
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("SI!🍪", callback_data="yes"),InlineKeyboardButton("NO!🥠", callback_data="nope")]
+            ]))
+    except:
+        pass
+
+
+
+def remove(id_group, state):
     try:
         scheduler.remove_job('remove'+str(id_group))
     except:
         log_message(
             f"Non sono riuscito a rimuovere lo scheduler della chiusura scommesse")
         pass
-    global result
-    gruppo = bet.search(Query()['id_group'] == id_group)
-    if gruppo == []:
-        return
-    if gruppo[0]['announce'] == False:
-        group = app.get_chat(gruppo[0]['id_group'])
-        try:
-            poll_result = app.stop_poll(
-                gruppo[0]['id_group'], gruppo[0]['id_poll'])
-        except:
-            log_message(
-                f"Non posso chiudere questo sondaggio: {group.title}, {gruppo[0]['id_poll']}")
-            return
-        temp = []
-        for results in poll_result['options']:
-            temp = {
-                'value': results.text,
-                'result': results.voter_count
-            }
-            result.append(temp)
-        result.sort(reverse=True, key=get_result)
-        if result[0]['result'] == result[1]['result']:
-            app.send_message(
-                gruppo[0]['id_group'], "Wow, avete raggiunto una parità sul voto che implica l'annullamento di questa scommessa :(")
-            log_message(f"Parità raggiunta in questo gruppo: {group.title}")
-        else:
-            app.send_message(
-                gruppo[0]['id_group'], f"Risultato del sondaggio:\n-{result[0]['value']}: {result[0]['result']}\n-{result[1]['value']}: {result[1]['result']}\n\nHa vinto il {result[0]['value']}!")
-            bet.update({'choice': result[0]['value']}, Query()[
-                'id_group'] == gruppo[0]['id_group'])
-            log_message(
-                f"In questo gruppo, il sondaggio si è chiuso positivamente: {group.title}")
-        result = []
+    bet1 = bet.search(Query()['id_group']== id_group)
+    app.edit_message_reply_markup(id_group, bet1[0]['id_poll'], InlineKeyboardMarkup(
+        [[InlineKeyboardButton("❌SCOMMESSE CHIUSE❌", callback_data="end")]]))
+
+    yes = bet1[0]['yes_users']
+    no = bet1[0]['no_users']
+    
+    text="Risultato del sondaggio:\nSI:"
+    if len(yes)==0:
+        text+="\n**NESSUNO**"
+    else:
+        for element in yes:
+            user = cookie.search(Query()['id_user']==element['user_id'])
+            text+=f"\n- {user[0]['username'] if user[0]['username'] else user[0]['user']} "
+            text+=f"x{element['qta']}"
+    text+="\nNO:"
+    if len(no)==0:
+        text+="\n**NESSUNO**"
+    else:
+        for element in no:
+            user = cookie.search(Query()['id_user']==element['user_id'])
+            text+=f"\n- {user[0]['username'] if user[0]['username'] else user[0]['user']} "
+            text+=f"x{element['qta']}"
+    app.send_message(id_group, text)
+    if state == True:   #biscotto prima della scadenza
+        find_result(id_group)
+    else:
         time_scheduler()
 
 
