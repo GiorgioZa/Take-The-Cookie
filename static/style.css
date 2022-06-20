@@ -11,20 +11,52 @@ body {
 
 .leaderboard-card {
 	background: #fff;
-	margin-bottom: 30px;
 	border-radius: 5px;
 	overflow: hidden;
 	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
+
 .leaderboard-card.leaderboard-card--first {
-	transform: scale(1.10);
+	margin: auto;
+	animation-name: first;
+  	animation-duration: 1.5s;
+  	animation-timing-function: ease;
+  	animation-iteration-count: infinite;
+  	animation-direction: alternate;
+
+}
+
+@keyframes first{
+	from {transform: scale(1);}
+	to {transform: scale(1.2);}
 }
 .leaderboard-card.leaderboard-card--second {
-	transform: scale(1);
+	margin: auto;
 }
 .leaderboard-card.leaderboard-card--third {
-	transform: scale(0.95);
+	margin: auto;
 }
+
+.col-sm-4{
+	margin-bottom: 25px;
+}
+
+@media only screen and (min-width: 769px) {
+	[class="row podium"]{
+		display: none;
+	}
+}
+
+@media only screen and (max-width: 768px) {
+	/* For mobile phones: */
+	[class*="col-"] {
+	  margin-top: 10px;
+	}
+	[class="row"]{
+		display: none;
+	}
+}
+
 .leaderboard-card.leaderboard-card--first .leaderboard-card__top {
 	background: linear-gradient(45deg, #ffd700, #f8de7e);
 	color: #fff;
@@ -68,7 +100,6 @@ img.circle-img.circle-img--small {
 .table tbody tr th,
 .table tbody tr td {
 	vertical-align: middle;
-	border: none;
 }
 .table thead tr th:nth-last-child(1),
 .table thead tr td:nth-last-child(1),
