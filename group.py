@@ -128,7 +128,7 @@ def add_group(message):
 
 
 def remove_error(gruppo):
-    db.modify_db(db.DELETE_QUERY_GROUP, (gruppo,))
+    db.modify_db(db.DELETE_QUERY_GROUPS, (gruppo,))
     try:
         ini.app.send_message(gruppo, f"Ho elimato questo gruppo {gruppo} per un errore di sistema, puoi riaggiungerlo usando il comando /add ;)")
     except:
