@@ -1,0 +1,4 @@
+/* db auth info here (host, user, password, database)*/
+localhost, xxx, xxx, xxx, 
+/* user stuff here (session name, bot token, log group, super user)*/
+xxx, xxx:xxx, xxx, xxx, 
