@@ -20,6 +20,7 @@ mydb = mysql.connector.connect(
 
 mycursor = mydb.cursor()
 
+
 def modify_db(query, value):
     mycursor.execute(query, value)
     mydb.commit()

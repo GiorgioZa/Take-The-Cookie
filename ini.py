@@ -1,7 +1,14 @@
-from  pyrogram import Client, filters, errors
+from pyrogram import Client, filters, errors
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
-import db, random, os,bet, commands,group, cookies, sys
+import db
+import random
+import os
+import bet
+import commands
+import group
+import cookies
+import sys
 sys.setrecursionlimit(1500)
 file = open("config_file.txt", "r").readlines()
 line = file[3].split(", ")
@@ -16,22 +23,26 @@ scheduler = BackgroundScheduler()
 group_id = "0"
 LOG_GROUP = int(dev_stuff[2])
 SUPER_USER = int(dev_stuff[3])
-is_taken = True    #flag che verifica se esiste la condizione per inviare un nuovo biscotto
-is_first = True     #flag che verifica se chi prende il biscotto è il primo a farlo
+is_taken = True  # flag che verifica se esiste la condizione per inviare un nuovo biscotto
+is_first = True  # flag che verifica se chi prende il biscotto è il primo a farlo
 
 
 def log_message(message):
     app.send_message(LOG_GROUP, message)
 
 
+def ramdom_gen(limit):
+    random.seed()
+    return random.randrange(limit)
+
+
 def select_group():
     global group_id
-    last_group = group_id
     query = db.query_db_no_value("SELECT `id_group` FROM `groups`")
     selected = []
+    flag = False  # gruppo piccolo
     if len(query) >= 2:
-        random.seed()
-        srand = random.randrange(101)
+        srand = ramdom_gen(101)
         for groups in query:
             try:
                 temp_info = app.get_chat_members_count(groups[0])
@@ -43,24 +54,34 @@ def select_group():
                 continue
             except errors.PeerIdInvalid:
                 group.remove_error(groups[0])
-            if srand < 30:  # 0 a 29   (30%)
+                continue
+            if srand < 10:  # 0 a 9   (10%)
+                flag = True
                 if temp_info >= 500:  # 500
                     selected.append(groups[0])
                     continue
-            elif srand < 30 + 10:  # 30 a 39     (10%)
+            elif srand < 10 + 15:  # 10 a 24     (15%)
+                flag = False
                 if temp_info < 10:  # 0 a 9
                     selected.append(groups[0])
                     continue
-            elif srand < 30 + 10 + 25:  # 45 a 64    (25%)
+            elif srand < 10 + 15 + 20:  # 25 a 44    (20%)
+                flag = False
                 if temp_info >= 10 and temp_info < 50:  # 10 a 49
                     selected.append(groups[0])
                     continue
-            elif srand <= 30 + 10 + 25 + 35:  # 65 a 100     (35%)
-                if temp_info >= 50 and temp_info < 500:  # da 50 a 499
+            elif srand < 10 + 15 + 20 + 25:  # 45 a 69    (25%)
+                flag = True
+                if temp_info >= 50 and temp_info < 100:  # 50 a 99
+                    selected.append(groups[0])
+                    continue
+            elif srand <= 10 + 15 + 20 + 25 + 30:  # 70 a 100     (30%)
+                flag = True
+                if temp_info >= 100 and temp_info < 500:  # da 50 a 499
                     selected.append(groups[0])
                     continue
         if len(selected) >= 2:
-            group_id = selected[random.randrange(len(selected))]
+            group_id = selected[ramdom_gen(len(selected))]
         elif len(selected) == 1:
             group_id = selected[0]
         else:
@@ -73,14 +94,38 @@ def select_group():
         group_id = "0"
         log_message("Nessun gruppo selezionato per ricevere il biscotto")
         return
-    if group_id == last_group:
+    verify_group(flag)
+
+
+def verify_group(flag):
+    f = open("last_groups.txt", "r")
+    groups = f.read().split(",")
+    for element in groups:
+        if element == "":
+            groups.pop()
+    definitive = groups.copy()
+    max = 0
+    if flag == True:  # gruppo grande
+        max = 4
+    else:   #gruppo piccolo
+        max = 1
+    while len(groups) > max:
+        groups.pop(0)
+    if str(group_id) in groups:
         log_message("Gruppo scelto uguale al precedente!")
         select_group()
-    else:
-        group_name = app.get_chat(group_id)
-        log_message(
-            f"Il prossimo gruppo in cui verrà inviato il biscotto è: {group_name.title}")
-
+        return
+    while len(definitive) > 9:
+        definitive.pop(0)
+    definitive.append(group_id)
+    f.close()
+    f1 = open("last_groups.txt", "w")
+    for x in definitive:
+        f1.write(str(x)+",")
+    group_name = app.get_chat(group_id)
+    log_message(
+        f"Il prossimo gruppo in cui verrà inviato il biscotto è: {group_name.title}")
+    f1.close()
 
 
 def start_scheduler():
@@ -88,7 +133,8 @@ def start_scheduler():
         scheduler.add_job(restart, 'interval',  seconds=10,
                           id='main', replace_existing=True)
     else:
-        scheduler.add_job(cookies.biscotto, 'interval',  seconds=10, args=(group_id,), id='biscotto', replace_existing=True)
+        scheduler.add_job(cookies.biscotto, 'interval',  seconds=10, args=(
+            group_id,), id='biscotto', replace_existing=True)
     bets = db.query_db_no_value("SELECT `id_group`, `closed` FROM `bets`")
     if bets != []:
         for element in bets:
@@ -96,7 +142,7 @@ def start_scheduler():
                 try:
                     scheduler.add_job(bet.remove, 'interval', minutes=10,
                                       args=(element[0], False), id=f'remove{element[0]}')
-                except: 
+                except:
                     pass
     time_scheduler()
 
@@ -115,22 +161,23 @@ def create_date(seconds):
 
 def time_scheduler():
     remove_scheduler("scheduler")
-    today = datetime.now()
-    if today.hour <= 23 and today.hour >= 0 and today.minute <= 59:
-        rimuovi = datetime(today.year, today.month,
-                           today.day, 23, 00, 00)
-        temp = str(create_date(find_seconds(rimuovi, today)))
-        temp = temp.replace('(', "")
-        temp = temp.replace(')', "")
-        temp = temp.replace(' ', "")
-        a = temp.split(',')
-        try:
-            scheduler.add_job(
-                time_check, 'interval', days=int(a[0]), hours=int(a[1]), minutes=int(a[2]), seconds=int(a[3]), id='timecheck')
-        except:
-            pass
-    else:
-        time_check()
+    scheduler.add_job(time_check, 'cron', hour=23, minute=59, second=59)
+    #today = datetime.now()
+    # if today.hour <= 23 and today.hour >= 0 and today.minute <= 59:
+    #    rimuovi = datetime(today.year, today.month,
+    #                       today.day, 23, 00, 00)
+    #    temp = str(create_date(find_seconds(rimuovi, today)))
+    #    temp = temp.replace('(', "")
+    #    temp = temp.replace(')', "")
+    #    temp = temp.replace(' ', "")
+    #    a = temp.split(',')
+    #    try:
+    #        scheduler.add_job(
+    #            time_check, 'interval', days=int(a[0]), hours=int(a[1]), minutes=int(a[2]), seconds=int(a[3]), id='timecheck')
+    #    except:
+    #        pass
+    # else:
+    #    time_check()
 
 
 def scheduler_new_date():
@@ -146,10 +193,10 @@ def scheduler_new_date():
         restart()
 
 
-
 def time_check():
     if remove_scheduler('timecheck') == False:
-        log_message("Non sono riuscito a togliere lo scheduler che scansiona le vincite")
+        log_message(
+            "Non sono riuscito a togliere lo scheduler che scansiona le vincite")
 
     temp = db.query_db_no_value("SELECT `id_group` FROM `bets`")
     for gruppi in temp:
@@ -167,7 +214,6 @@ def remove_scheduler(id):
     return True
 
 
-
 def restart():
     remove_scheduler("main")
     select_group()
@@ -183,6 +229,7 @@ def taken(client, callback_query):
 def update(client, callback_query):
     cookies.update_list(callback_query)
 
+
 @app.on_callback_query(filters.regex("expired"))
 def expired_query(client, callback_query):
     cookies.taken_query(callback_query)
@@ -195,10 +242,11 @@ def download_propic(user):
     except:
         pass
     if os.path.exists(f"static/img/{user.from_user.id}.png"):
-        db.modify_db("UPDATE `users` SET `propic` = %s WHERE `id_user` = %s",(1, user.from_user.id))  # true
+        db.modify_db("UPDATE `users` SET `propic` = %s WHERE `id_user` = %s",
+                     (1, user.from_user.id))  # true
     else:
         db.modify_db("UPDATE `users` SET `propic` = %s WHERE `id_user` = %s",
-                  (0, user.from_user.id))  # false
+                     (0, user.from_user.id))  # false
     return
 
 
@@ -215,6 +263,7 @@ def yes_choice(client, callback_query):
 @app.on_callback_query(filters.regex("nope"))
 def no_choice(client, callback_query):
     bet.choice(callback_query)
+
 
 @app.on_message((filters.private) & filters.command("start"))
 def start(client, message):
@@ -239,7 +288,7 @@ def addp(client, message):
 
 @app.on_message((filters.group) & filters.command("add"))
 def add(client, message):
-    group.add_group(message)
+    group.add_group(message, False)
 
 
 @app.on_message(filters.command('remove'))
@@ -262,10 +311,15 @@ def group_info(client, message):
     group.group_info(message)
 
 
+@app.on_message((filters.group) & filters.command("reboot"))
+def group_info(client, message):
+    messager = app.send_message(message.chat.id, "💤Riavvio in corso...💤")
+    commands.reboot(message, messager)
+
+
 @app.on_callback_query(filters.regex('set_privacy'))
 def set_privacy(client, callback_query):
     group.set_privacy(callback_query)
-    
 
 
 @app.on_callback_query(filters.regex("set_gift"))
@@ -288,9 +342,15 @@ def force_result(client, message):
     commands.manual_close_bet()
 
 
+@app.on_message(filters.chat(SUPER_USER) & filters.command("close_id"))
+def force_result(client, message):
+    commands.close_bet_by_id(message)
+
+
 @app.on_message(filters.chat(SUPER_USER) & filters.command("force_group"))
 def force_group(client, message):
     commands.manual_choice_new_group()
+
 
 @app.on_message(filters.chat(SUPER_USER) & filters.command("manual_group"))
 def force_send_cookie(client, message):
@@ -305,6 +365,11 @@ def announce(client, message):
 @app.on_message(filters.chat(SUPER_USER) & filters.command("modify_user"))
 def modify_user(client, message):
     commands.modify_manually_users(message)
+
+
+@app.on_message(filters.chat(SUPER_USER) & filters.command("show_jobs"))
+def modify_user(client, message):
+    commands.show_jobs(message)
 
 
 @app.on_message((filters.group) & filters.command("stats"))
@@ -325,7 +390,6 @@ def edit(client, callback_query):
 @app.on_callback_query(filters.regex("update_qta"))
 def edit(client, callback_query):
     commands.update_qta(callback_query)
-
 
 
 def start_bot():
