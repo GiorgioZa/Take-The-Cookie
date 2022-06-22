@@ -1,8 +1,14 @@
-import cookies, db, ini
+import cookies
+import db
+import ini
+import bet
+import group
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+
 def welcome(message):
-    ini.app.send_message(message.chat.id, "Questo bot ti permette di intrattenere il tuo gruppo con un gioco molto divertente.\nPer usare questo bot, aggiungilo come amministratore ad un gruppo in cui tu sei admin!")
+    ini.app.send_message(
+        message.chat.id, "Questo bot ti permette di intrattenere il tuo gruppo con un gioco molto divertente.\nPer usare questo bot, aggiungilo come amministratore ad un gruppo in cui tu sei admin!")
     return
 
 
@@ -35,9 +41,30 @@ def instant_cookie():
     return
 
 
+def show_jobs(message):
+    ini.app.send_message(message.chat.id, ini.scheduler.get_jobs())
+
+
 def manual_close_bet():
     ini.log_message("Ho avviato la chiusura delle scommesse manuali")
     ini.time_check()
+    return
+
+
+def close_bet_by_id(message):
+    info = message.text
+    info = info.split(" ")
+    if len(info) == 1:
+        return
+    info.pop(0)
+    ini.log_message("Ho avviato la chiusura delle scommesse manuali per id")
+    bet_i = db.query_db(
+        "SELECT `closed` FROM `bets` WHERE `id_group` =%s", (info[0],))
+    if bet_i == []:
+        return
+    elif bet_i[0][0] == 1 or bet_i[0][0] == 2:
+        bet.remove(info[0])
+    bet.find_result(info[0])
     return
 
 
@@ -66,13 +93,16 @@ def manual_choice_group_by_id(message):
 
 def create_and_send_announce(message):
     info = message.text
-    info = info.split(" ")
+    info = info.split("/announce")
     if len(info) == 1:
         return
     info.pop(0)
+    text = ""
+    for element in info:
+        text += element
     query = db.query_db_no_value("SELECT `id_group` FROM `groups`")
     for gruppi in query:
-        ini.app.send_message(gruppi[0], info[0])
+        ini.app.send_message(gruppi[0], text)
 
 
 def modify_manually_users(message):
@@ -86,33 +116,49 @@ def modify_manually_users(message):
     user_info = db.query_db(
         "SELECT * FROM `users` WHERE `id_user` = %s", (info[0],))
     if user_info == []:  # se l'utente non è mai esistito
-        ini.app.send_message(message.chat.id, "L'utente non esiste nel database!")
+        ini.app.send_message(
+            message.chat.id, "L'utente non esiste nel database!")
         return
     else:
         if user == []:  # non è in sessione
             try:
-                db.modify_db("INSERT INTO `sessions` (`id_user`, `quantity`) VALUES (%s, %s)", (info[0], info[1]))
+                db.modify_db(
+                    "INSERT INTO `sessions` (`id_user`, `quantity`) VALUES (%s, %s)", (info[0], info[1]))
             except:
-                ini.app.send_message(message.chat.id, "Attenzione HAI inserito troppi biscotti")
+                ini.app.send_message(
+                    message.chat.id, "Attenzione HAI inserito troppi biscotti")
                 return
             try:
-                db.modify_db("UPDATE `users` SET `global_quantity` = %s WHERE `id_user` = %s",(user_info[0][3]+int(info[1]), user[0][0]))
+                db.modify_db("UPDATE `users` SET `global_quantity` = %s WHERE `id_user` = %s",
+                             (user_info[0][3]+int(info[1]), user[0][0]))
             except:
-                ini.app.send_message(message.chat.id, "Attenzione HAI inserito troppi biscotti")
+                ini.app.send_message(
+                    message.chat.id, "Attenzione HAI inserito troppi biscotti")
                 return
         else:  # l'utente è sia in sessione sia in generale
             try:
-                db.modify_db("UPDATE `sessions` SET `quantity` = %s WHERE `id_user` = %s",(user[0][1]+int(info[1]), user[0][0]))
+                db.modify_db("UPDATE `sessions` SET `quantity` = %s WHERE `id_user` = %s",
+                             (user[0][1]+int(info[1]), user[0][0]))
             except:
-                ini.app.send_message(message.chat.id, "Attenzione HAI inserito troppi biscotti")
+                ini.app.send_message(
+                    message.chat.id, "Attenzione HAI inserito troppi biscotti")
                 return
             try:
-                db.modify_db("UPDATE `users` SET `global_quantity` = %s WHERE `id_user` = %s",(user_info[0][3]+int(info[1]), user[0][0]))
+                db.modify_db("UPDATE `users` SET `global_quantity` = %s WHERE `id_user` = %s",
+                             (user_info[0][3]+int(info[1]), user[0][0]))
             except:
-                ini.app.send_message(message.chat.id, "Attenzione HAI inserito troppi biscotti")
+                ini.app.send_message(
+                    message.chat.id, "Attenzione HAI inserito troppi biscotti")
                 return
         ini.app.send_message(message.chat.id, "Operazione completata!")
 
+
+def reboot(message, edit):
+    if db.query_db("SELECT `id_group` FROM `groups` WHERE `id_group` = %s", (message.chat.id,)) == []:  # gruppo non esiste
+        group.add_group(message, True)
+    else:
+        ini.app.edit_message_text(
+            message.chat.id, edit.message_id, "✅Riavvio completato!✅")
 
 
 def send_stats(message):
@@ -133,10 +179,9 @@ def send_stats(message):
             ]))
 
 
-
 def update_stats(callback_query):
     query = db.query_db("SELECT `global_quantity`, `session` FROM `users` WHERE `id_user` = %s",
-                     (callback_query.from_user.id,))
+                        (callback_query.from_user.id,))
     if query == []:
         try:
             ini.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id, "Utente non trovato!", reply_markup=InlineKeyboardMarkup(
@@ -178,7 +223,7 @@ def send_personal_cookies_qta(message):
 
 def update_qta(callback_query):
     query = db.query_db("SELECT `quantity` FROM `sessions` WHERE `id_user` = %s",
-                     (callback_query.from_user.id,))
+                        (callback_query.from_user.id,))
     if query == []:
         try:
             ini.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id, "Utente non trovato!", reply_markup=InlineKeyboardMarkup(

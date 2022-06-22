@@ -1,4 +1,6 @@
-import ini, cookies, db
+import ini
+import cookies
+import db
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
@@ -8,7 +10,8 @@ def stop_bet(callback_query):
 
 
 def choice(callback_query):
-    group_bet = db.query_db("SELECT `closed` FROM `bets` WHERE `id_group` = %s", (callback_query.message.chat.id,))
+    group_bet = db.query_db(
+        "SELECT `closed` FROM `bets` WHERE `id_group` = %s", (callback_query.message.chat.id,))
     if group_bet != [] and group_bet[0] == 0:
         test = db.query_db("SELECT `quantity` FROM `sessions` WHERE `id_user` = %s",
                            (callback_query.from_user.id,))
@@ -23,7 +26,8 @@ def choice(callback_query):
                 no_choice(callback_query)
             write(callback_query)
     else:
-        callback_query.answer("Mi dispiace, non puoi più scommettere perchè il sondaggio è terminato :(", show_alert=True)
+        callback_query.answer(
+            "Mi dispiace, non puoi più scommettere perchè il sondaggio è terminato :(", show_alert=True)
 
 
 def yes_choice(callback_query):
@@ -100,10 +104,11 @@ def find_result(group_id):
             "SELECT `quantity`, `global_quantity` FROM `users` u JOIN `sessions` s ON u.id_user = s.id_user WHERE u.id_user = %s", (element[0],))
         user_i = ini.app.get_users(element[0])
         text += f"\n- {user_i.mention()} "
-        text += f"x{element[0]} -> x{element[0]*2}; Totale: {user[0][1]+(element[1]*2)}"
-        db.modify_db("UPDATE `sessions` SET `quantity` = %s WHERE `id_user` = %s",
-                     (user[0][2] + element[1]*2, element[0]))
-        tot = user[0][3]
+        text += f"x{element[1]} -> x{element[1]*2}; Totale: {user[0][0]+(element[1]*2)}"
+        qta = user[0][0] + element[1]*2
+        db.modify_db(
+            "UPDATE `sessions` SET `quantity` = %s WHERE `id_user` = %s", (qta, element[0]))
+        tot = user[0][1]
         db.modify_db("UPDATE `users` SET `global_quantity` = %s WHERE `id_user` = %s",
                      (tot+element[1]*2, element[0]))
     value = ""
@@ -115,52 +120,64 @@ def find_result(group_id):
             group_id, "Nessuna scommessa è risultata la vincente :(\nSarà per la prossima volta 😣 *biscotto triste*")
     db.modify_db(
         "UPDATE `bets` SET `announce` = %s WHERE `id_group` = %s", (1, query[0][0]))
-    query = db.query_db("SELECT `id_user` FROM `sessions` WHERE `id_group` = %s", (group_id,))
+    query = db.query_db(
+        "SELECT `id_user` FROM `sessions` WHERE `id_group` = %s", (group_id,))
     for element in query:
         cookies.verify_win(element[0], group_id)
 
 
 def remove(id_group, state):
-    bet = db.query_db("SELECT `id_group`, `id_poll` FROM `bets` WHERE `id_group` =%s", (id_group,))
-    if ini.remove_scheduler(f'remove{id_group}') == False:
-        ini.log_message(
-            f"Non sono riuscito a rimuovere lo scheduler della chiusura scommesse")
-    try:
-        ini.app.edit_message_reply_markup(id_group, bet[0][1], InlineKeyboardMarkup(
-            [[InlineKeyboardButton("❌SCOMMESSE CHIUSE❌", callback_data="end")]]))
-        db.modify_db("UPDATE `bets` SET `closed` = %s WHERE `id_group` =%s", (1, id_group))     #1 = chiuso senza errori 
-    except ini.errors.MessageNotModified:
-        db.modify_db("UPDATE `bets` SET `closed` = %s WHERE `id_group` =%s", (2, id_group))     #2 = chiuso senza aver modificato il messaggio per errori 
-        pass
-    yes = db.query_db(
-        "SELECT `id_user`, `quantity` FROM `yes_bets` WHERE id_group = %s ORDER BY `quantity` DESC", (id_group,))
-    no = db.query_db(
-        "SELECT `id_user`, `quantity` FROM `no_bets` WHERE id_group = %s ORDER BY `quantity` DESC", (id_group,))
-    text = "Risultato del sondaggio:\nSI:"
-    if yes == []:
-        text += "\n**NESSUNO**"
-    else:
-        for element in yes:
-            user = ini.app.get_users(element[0])
-            text += f"\n- {user.mention()} "
-            text += f"x{element[1]}"
-    text += "\nNO:"
-    if no == []:
-        text += "\n**NESSUNO**"
-    else:
-        for element in no:
-            user = ini.app.get_users(element[0])
-            text += f"\n- {user.mention()} "
-            text += f"x{element[1]}"
-    ini.app.send_message(id_group, text)
-    if state == True:  # biscotto prima della scadenza
-        find_result(id_group)
-    else:
-        ini.time_scheduler()
+    bet = db.query_db(
+        "SELECT `id_group`, `id_poll`, `closed` FROM `bets` WHERE `id_group` =%s", (id_group,))
+    if bet != []:
+        if bet[0][2] == 0:
+            if ini.remove_scheduler(f'remove{id_group}') == False:
+                ini.log_message(
+                    f"Non sono riuscito a rimuovere lo scheduler della chiusura scommesse")
+            try:
+                ini.app.edit_message_reply_markup(id_group, bet[0][1], InlineKeyboardMarkup(
+                    [[InlineKeyboardButton("❌SCOMMESSE CHIUSE❌", callback_data="end")]]))
+                # 1 = chiuso senza errori
+                db.modify_db(
+                    "UPDATE `bets` SET `closed` = %s WHERE `id_group` =%s", (1, id_group))
+            except ini.errors.MessageNotModified:
+                # 2 = chiuso senza aver modificato il messaggio per errori
+                db.modify_db(
+                    "UPDATE `bets` SET `closed` = %s WHERE `id_group` =%s", (2, id_group))
+                pass
+            yes = db.query_db(
+                "SELECT `id_user`, `quantity` FROM `yes_bets` WHERE id_group = %s ORDER BY `quantity` DESC", (id_group,))
+            no = db.query_db(
+                "SELECT `id_user`, `quantity` FROM `no_bets` WHERE id_group = %s ORDER BY `quantity` DESC", (id_group,))
+            text = "Risultato del sondaggio:\nSI:"
+            if yes == []:
+                text += "\n**NESSUNO**"
+            else:
+                for element in yes:
+                    user = ini.app.get_users(element[0])
+                    text += f"\n- {user.mention()} "
+                    text += f"x{element[1]}"
+            text += "\nNO:"
+            if no == []:
+                text += "\n**NESSUNO**"
+            else:
+                for element in no:
+                    user = ini.app.get_users(element[0])
+                    text += f"\n- {user.mention()} "
+                    text += f"x{element[1]}"
+            ini.app.send_message(id_group, text)
+        if state == True:  # biscotto prima della scadenza
+            find_result(id_group)
+        else:
+            ini.time_scheduler()
 
 
 def bet_fun(message):
     id = message.chat.id
+    if db.query_db("SELECT `id_group` FROM `groups` WHERE `id_group` = %s", (id,)) == []:
+        ini.app.send_message(
+            id, "Gruppo non trovato :(\nAssicurati di aver segnalato il gruppo al bot con il comando /add !")
+        return
     gruppo = ini.app.get_chat(id)
     if db.query_db("SELECT `id_group` FROM `bets` WHERE `id_group` = %s", (id,)) == []:
         ini.app.send_message(id, "Hai avviato una scommessa!\
@@ -184,12 +201,12 @@ def bet_fun(message):
 
         try:
             ini.scheduler.add_job(remove, 'interval', hours=1,
-                              args=(id, False), id='remove'+str(id))
+                                  args=(id, False), id='remove'+str(id))
         except:
             pass
     else:
         ini.app.send_message(id,
-                              "questo gruppo ha già fatto la scommessa di giornata")
+                             "questo gruppo ha già fatto la scommessa di giornata")
         return
 
 
@@ -217,10 +234,10 @@ def write(cquery):
                  (user_qta[0][1]-1, cquery.from_user.id))
     try:
         ini.app.edit_message_text(cquery.message.chat.id, cquery.message.message_id, text,
-                                   reply_markup=InlineKeyboardMarkup(
-                                       [
-                                           [InlineKeyboardButton("SI!🍪", callback_data="yes"), InlineKeyboardButton(
-                                               "NO!🥠", callback_data="nope")]
-                                       ]))
+                                  reply_markup=InlineKeyboardMarkup(
+                                      [
+                                          [InlineKeyboardButton("SI!🍪", callback_data="yes"), InlineKeyboardButton(
+                                              "NO!🥠", callback_data="nope")]
+                                      ]))
     except:
         pass
