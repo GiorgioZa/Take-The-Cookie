@@ -1,10 +1,5 @@
 import mysql.connector
 
-INSERT_QUERY_USERS = ("INSERT INTO `users` VALUES (%s, %s, %s, %s, %s, %s)")
-INSERT_QUERY_SESSIONS = ("INSERT INTO `sessions` VALUES (%s, %s, %s)")
-INSERT_QUERY_GROUPS = ("INSERT INTO `groups` VALUES (%s, %s, %s, %s, %s)")
-INSERT_QUERY_BETS = ("INSERT INTO `bets` VALUES (%s, %s, %s, %s)")
-
 DELETE_QUERY_GROUPS = ("DELETE FROM `groups` WHERE `id_group` = %s")
 
 file = open("config_file.txt", "r").readlines()

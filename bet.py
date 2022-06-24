@@ -12,7 +12,7 @@ def stop_bet(callback_query):
 def choice(callback_query):
     group_bet = db.query_db(
         "SELECT `closed` FROM `bets` WHERE `id_group` = %s", (callback_query.message.chat.id,))
-    if group_bet != [] and group_bet[0] == 0:
+    if group_bet != [] and group_bet[0][0] == 0:
         test = db.query_db("SELECT `quantity` FROM `sessions` WHERE `id_user` = %s",
                            (callback_query.from_user.id,))
         if test == [] or test[0][0] == 0:
@@ -196,8 +196,8 @@ def bet_fun(message):
 
         ini.log_message(
             f"Questo gruppo ha avviato un nuovo sondaggio: {gruppo.title}")
-        db.modify_db("INSERT INTO `bets` VALUES (%s, %s, %s, %s, %s)",
-                     (id, id_poll.message_id, None, 0, 0))
+        db.modify_db("INSERT INTO `bets`(`id_group`, `id_poll`, `result`) VALUES (%s, %s, %s)",
+                     (id, id_poll.message_id, None))
 
         try:
             ini.scheduler.add_job(remove, 'interval', hours=1,

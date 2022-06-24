@@ -35,7 +35,6 @@ def ramdom_gen(limit):
     random.seed()
     return random.randrange(limit)
 
-
 def select_group():
     global group_id
     query = db.query_db_no_value("SELECT `id_group` FROM `groups`")
@@ -161,7 +160,7 @@ def create_date(seconds):
 
 def time_scheduler():
     remove_scheduler("scheduler")
-    scheduler.add_job(time_check, 'cron', hour=23, minute=59, second=59)
+    scheduler.add_job(time_check, 'cron', hour=23)
     #today = datetime.now()
     # if today.hour <= 23 and today.hour >= 0 and today.minute <= 59:
     #    rimuovi = datetime(today.year, today.month,
@@ -194,10 +193,6 @@ def scheduler_new_date():
 
 
 def time_check():
-    if remove_scheduler('timecheck') == False:
-        log_message(
-            "Non sono riuscito a togliere lo scheduler che scansiona le vincite")
-
     temp = db.query_db_no_value("SELECT `id_group` FROM `bets`")
     for gruppi in temp:
         bet.find_result(gruppi[0])
@@ -304,6 +299,11 @@ def betc(client, message):
 @app.on_message(filters.command("list"))
 def listc(client, message):
     cookies.print_list(message)
+
+
+@app.on_message(filters.command("give"))
+def give(client, message):
+    commands.give(message)
 
 
 @app.on_message((filters.group) & filters.command("group_info"))

@@ -138,8 +138,7 @@ def add_group(message, bypass):
 
 def add_group_real(message):
     chat = ini.app.get_chat(message.chat.id)
-    db.modify_db(db.INSERT_QUERY_GROUPS, (message.chat.id,
-                 chat.title, "0", "0", "1"))  # aggiungi il gruppo al db
+    db.modify_db("INSERT INTO `groups`(`id_group`, `name`) VALUES (%s, %s)", (message.chat.id,chat.title))  # aggiungi il gruppo al db
     ini.log_message(
         f"Ho aggiunto un nuovo gruppo: {chat.title} da parte di: {message.from_user.username if message.from_user.username!=None else message.from_user.firstname}")
 
