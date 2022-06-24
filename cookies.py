@@ -41,12 +41,12 @@ def create_list():
     return text
 
 
-def win(winner):
+def win(winner, group):
     all_group = db.query_db(
-        "SELECT `id_group` FROM `groups` WHERE `id_group` != %s", winner.message.chat.id)
+        "SELECT `id_group` FROM `groups` WHERE `id_group` != %s", (group,))
     for element in all_group:
         ini.app.send_message(
-            element[0], f"EVVIVA! Questa sessione è stata vinta da {winner}!🥳")
+            element[0], f"EVVIVA! Questa sessione è stata vinta da {winner.mention}!🥳")
 
 
 def try_biscotto(chat_group):
@@ -79,7 +79,7 @@ def try_biscotto(chat_group):
         return
     try:
         ini.scheduler.add_job(expired, 'interval',  hours=1,
-                              args=(bisquit,), id=f"expired{bisquit.message_id}")
+                            args=(bisquit,), id=f"expired{bisquit.message_id}")
     except:
         ini.log_message(
             "non sono riuscito a creare lo scheduler per i biscotti scaduti :(")
@@ -112,7 +112,7 @@ def expired(bisquit):
     ini.app.send_message(
         ini.LOG_GROUP, f"{bisquit.chat.title} ha aspettato troppo tempo. il biscotto è andato a male!")
 
-    if not(ini.remove_scheduler(f'expired{bisquit.message_id}')):
+    if ini.remove_scheduler(f'expired{bisquit.message_id}') == False:
         ini.log_message(
             "non sono riuscito a modificare lo scheduler del biscotto marcio!")
     ini.select_group()
@@ -184,7 +184,7 @@ def try_taken_query(callback_query):
                  (callback_query.message.chat.title, callback_query.message.chat.id))
     ini.download_propic(callback_query)
     ini.app.edit_message_text(
-        callback_query.message.chat.id, callback_query.message.message_id, text)
+        callback_query.message.chat.id, callback_query.message.mssage_id, text)
     verify_win(callback_query.from_user.id, callback_query.message.chat.id)
     return
 
@@ -207,8 +207,9 @@ def try_taken(client, callback_query):
     ini.log_message(
         f"Biscotto del gruppo: {callback_query.message.chat.title} riscattato da: {callback_query.from_user.username if callback_query.from_user.username!=None else callback_query.from_user.first_name}")
     ini.remove_scheduler('biscotto')
-    ini.remove_scheduler('expired')
-    ini.remove_scheduler(f'expired{callback_query.message.message_id}')
+    if ini.remove_scheduler(f'expired{callback_query.message.message_id}') == False:
+        ini.log_message("Non sono riuscito a togliere lo scheduler ")
+    
     total = 0
     bisquit = db.query_db(
         "SELECT `id_user`, `quantity` FROM `sessions` WHERE `id_user` = %s", (callback_query.from_user.id,))
@@ -264,14 +265,38 @@ def verify_win(user_id, group_id):
     elif quantity == 30:
         query = db.query_db(
             "SELECT `gift` FROM `groups` WHERE `id_group` = %s", (group_id,))
-        if query[0][0] == 1:  # si
-            ini.app.send_message(group_id, f"Complementi {user.mention}, sei arrivato ai 30 biscotti🎉🎊.\nHai vinto il premio messo in palio dal progetto MyFilms che collabora con noi. Per ritirare il tuo mese gratuito contatta @Mario_Myfilms, ti guiderà lui.\n\nPer tutti gli altri utenti incuriositi del progetto che vorrebbero avere ulteriori info, potete contattare @Mario_Myfilms! (anche perchè ai non vincitori spetta comunque una promo 🌚)\n\nIn bocca al lupo al prossimo vincitore 😁\n\n❕*Ovviamente il vincitore attuale è escluso dalle vincite per i prossimi mesi.*\n** *Il vincitore può anche rifiutare il premio scegliendo se passarlo al secondo classificato o ad un utente a caso;* **")
+        ini.last_winner = user_id
+        win(user, group_id)
+        if query[0][0] == 1 and win_check(user_id) == True:  # si + vittoria confermata
+            ini.app.send_message(group_id, f"Complementi {user.mention}, sei arrivato ai 30 biscotti🎉🎊.\nHai vinto il premio messo in palio dal progetto MyFilms che collabora con noi. Per ritirare il premio, contatta in privato @Mario_Myfilms.\n\nPer tutti gli altri utenti incuriositi dal progetto, potete contattare @Mario_Myfilms! (anche perchè ai non vincitori spetta comunque una promo 🌚).\n\nIn bocca al lupo al prossimo vincitore 😁\n\n❕*Ovviamente il vincitore attuale è escluso dalle vincite per i prossimi mesi.*\n***Il vincitore può anche rifiutare il premio!* **")
         else:  # no
             ini.app.send_message(group_id,
                                  f"Complementi {user.mention}, sei arrivato ai 30 biscotti perciò hai vinto questa sessione!🎉🎊")
         ini.log_message(
             f"{user.mention} è arrivato a 30 biscotti! Database resettato.")
-        win(user.mention)
-        db.modify_db("UPDATE `users` SET `sessions` = %s WHERE `id_user` = %s",
+        
+        db.modify_db("UPDATE `users` SET `session` = %s WHERE `id_user` = %s",
                      (sessionqa+1, user.id))
         db.modify_db_no_value("DELETE FROM `sessions`")
+
+
+def win_check(winner_id):
+    f = open("last_winners.txt", "r")
+    winners = f.read().split(",")
+    while len(winners) > 3:
+        winners.pop(0)
+    all = winners.copy()
+    f.close()
+    if str(winner_id) in winners:
+        ini.log_message("Il vincitore ha già vinto nelle 3 sessioni passate!")
+        return False
+    else:
+        ini.log_message("Vittoria confermata!")
+        all.append(winner_id)
+        f1 = open("last_groups.txt", "w")
+        for x in all:
+            f1.write(str(x)+",")
+        f1.close()
+        return True
+
+            

@@ -42,4 +42,4 @@ def page_not_found(error):
     return render_template('error.html'), 404
 
 
-app.run(host='0.0.0.0', port=80)
+app.run(host='0.0.0.0', port=80, debug=False)
