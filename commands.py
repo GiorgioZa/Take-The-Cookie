@@ -159,7 +159,7 @@ def modify_manually_users(message):
 
 def reboot(message, edit):
     if db.query_db("SELECT `id_group` FROM `groups` WHERE `id_group` = %s", (message.chat.id,)) == []:  # gruppo non esiste
-        group.add_group(message, True)
+        group.add_group(message)
     ini.app.edit_message_text(
         message.chat.id, edit.message_id, "✅Riavvio completato!✅")
 
@@ -248,43 +248,56 @@ def update_qta(callback_query):
                 "Informazioni già aggiornate!", show_alert=True)
 
 
-
 def give(message):
     command = message.text
     command = command.split(" ")
     command.pop(0)
-    if len(command) <= 1 or int(command[1])<0:
-        ini.app.send_message(message.chat.id, "Sintassi non corretta!\nUsa: /give __username utente a cui inviare__ __quantità da inviare__ (maggiore di zero)", reply_to_message_id=message.message_id)
+    if len(command) <= 1 or int(command[1]) < 0:
+        ini.app.send_message(message.chat.id, "Sintassi non corretta!\nUsa: /give __username utente a cui inviare__ __quantità da inviare__ (maggiore di zero)",
+                             reply_to_message_id=message.message_id)
         return
-    query = db.query_db("SELECT u.id_user, `quantity`, `global_quantity` FROM `sessions` s JOIN `users` u ON s.id_user = u.id_user WHERE u.id_user = %s",(message.from_user.id,))
-    if query==[] or query[0][1] == 0 or int(command[1])>query[0][1]:
-        ini.app.send_message(message.chat.id, "W la beneficenza... Ma per farla devi possedere abbastanza biscotti 😆.", reply_to_message_id=message.message_id)
+    query = db.query_db(
+        "SELECT u.id_user, `quantity`, `global_quantity` FROM `sessions` s JOIN `users` u ON s.id_user = u.id_user WHERE u.id_user = %s", (message.from_user.id,))
+    if query == [] or query[0][1] == 0 or int(command[1]) > query[0][1]:
+        ini.app.send_message(message.chat.id, "W la beneficenza... Ma per farla devi possedere abbastanza biscotti 😆.",
+                             reply_to_message_id=message.message_id)
         return
     receiver = None
     try:
         receiver = ini.app.get_users(command[0])
     except:
-        ini.app.send_message(message.chat.id, "OPS! Non è consentito inviare biscotti in paradisi fiscali 👮‍♂️! Assicurati che l'username o l'id dell'utente inserito sia corretto!", reply_to_message_id=message.message_id)
+        ini.app.send_message(message.chat.id, "OPS! Non è consentito inviare biscotti in paradisi fiscali 👮‍♂️! Assicurati che l'username o l'id dell'utente inserito sia corretto!",
+                             reply_to_message_id=message.message_id)
         return
-    query_2 = db.query_db("SELECT `id_user`, `quantity` FROM `sessions` WHERE `id_user` = %s",(receiver.id,))
-    query_3 = db.query_db("SELECT `id_user`, `global_quantity` FROM `users` WHERE `id_user` = %s",(receiver.id,))
+    query_2 = db.query_db(
+        "SELECT `id_user`, `quantity` FROM `sessions` WHERE `id_user` = %s", (receiver.id,))
+    query_3 = db.query_db(
+        "SELECT `id_user`, `global_quantity` FROM `users` WHERE `id_user` = %s", (receiver.id,))
     group_id = 0
     qta = 0
     if message.chat.type != "PRIVATE":
         group_id = message.chat.id
     if query_3 == []:
-        db.modify_db("INSERT INTO `users` VALUES (%s, %s, %s, %s, %s, %s)", (receiver.id, receiver.first_name, receiver.username, command[1], 0, 0))
+        db.modify_db("INSERT INTO `users` VALUES (%s, %s, %s, %s, %s, %s)",
+                     (receiver.id, receiver.first_name, receiver.username, command[1], 0, 0))
     else:
         qta = query_3[0][1]
-        db.modify_db("UPDATE `users` SET `global_quantity`= %s WHERE `id_user` = %s", (qta+int(command[1]), receiver.id))    
-    db.modify_db("UPDATE `users` SET `global_quantity`= %s WHERE `id_user` = %s", (query[0][2]-int(command[1]), message.from_user.id))
+        db.modify_db("UPDATE `users` SET `global_quantity`= %s WHERE `id_user` = %s",
+                     (qta+int(command[1]), receiver.id))
+    db.modify_db("UPDATE `users` SET `global_quantity`= %s WHERE `id_user` = %s",
+                 (query[0][2]-int(command[1]), message.from_user.id))
     if query_2 == []:
         if group_id == 0:
-            db.modify_db("INSERT INTO `sessions`(`id_user`, `quantity`) VALUES (%s, %s)", (receiver.id, command[1]))
+            db.modify_db(
+                "INSERT INTO `sessions`(`id_user`, `quantity`) VALUES (%s, %s)", (receiver.id, command[1]))
         else:
-            db.modify_db("INSERT INTO `sessions` VALUES (%s, %s, %s)", (receiver.id, group_id ,command[1]))
+            db.modify_db("INSERT INTO `sessions` VALUES (%s, %s, %s)",
+                         (receiver.id, group_id, command[1]))
     else:
         qta = query_2[0][1]
-        db.modify_db("UPDATE `sessions` SET `quantity`= %s WHERE `id_user` = %s", (qta+int(command[1]), receiver.id))
-    db.modify_db("UPDATE `sessions` SET `quantity`= %s WHERE `id_user` = %s", (query[0][1]-int(command[1]), message.from_user.id))
-    ini.app.send_message(message.chat.id, f"Ho correttamente donato {command[1]} biscotti a {receiver.mention}!", reply_to_message_id=message.message_id)
+        db.modify_db("UPDATE `sessions` SET `quantity`= %s WHERE `id_user` = %s",
+                     (qta+int(command[1]), receiver.id))
+    db.modify_db("UPDATE `sessions` SET `quantity`= %s WHERE `id_user` = %s",
+                 (query[0][1]-int(command[1]), message.from_user.id))
+    ini.app.send_message(
+        message.chat.id, f"Ho correttamente donato {command[1]} biscotti a {receiver.mention}!", reply_to_message_id=message.message_id)
