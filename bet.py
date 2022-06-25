@@ -20,10 +20,9 @@ def choice(callback_query):
                 \nRiscatta biscotti per poter scommettere e vincerne altri!", show_alert=True)
             return
         else:
-            if callback_query.data == "yes":
-                yes_choice(callback_query)
-            else:
-                no_choice(callback_query)
+            match callback_query.data:
+                case "yes": yes_choice(callback_query)
+                case "nope": no_choice(callback_query)
             write(callback_query)
     else:
         callback_query.answer(

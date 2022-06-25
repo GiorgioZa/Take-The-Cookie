@@ -160,7 +160,7 @@ def create_date(seconds):
 
 def time_scheduler():
     remove_scheduler("scheduler")
-    scheduler.add_job(time_check, 'cron', hour=23)
+    scheduler.add_job(time_check, 'cron', hour=22, id="time_check", replace_existing=True)
     #today = datetime.now()
     # if today.hour <= 23 and today.hour >= 0 and today.minute <= 59:
     #    rimuovi = datetime(today.year, today.month,
@@ -283,18 +283,24 @@ def addp(client, message):
 
 @app.on_message((filters.group) & filters.command("add"))
 def add(client, message):
-    group.add_group(message, False)
+    group.add_group(message)
 
 
 @app.on_message(filters.command('remove'))
 def removec(client, message):
-    group.remove_group(message)
+    if group.verify_admin(message.from_user.id, message.chat.id) == True:
+        group.remove_group(message)
+        return
+    else:
+        app.send_message(message.chat.id, "Non sei admin di questo gruppo!", reply_to_message_id=message.message_id)
 
 
 @app.on_message((filters.group) & filters.command("bet"))
 def betc(client, message):
-    bet.bet_fun(message)
-
+    if group.verify_admin(message.from_user.id, message.chat.id) == True:
+        bet.bet_fun(message)
+    else:
+        app.send_message(message.chat.id, "Non sei admin di questo gruppo!", reply_to_message_id=message.message_id)
 
 @app.on_message(filters.command("list"))
 def listc(client, message):
@@ -313,18 +319,31 @@ def group_info(client, message):
 
 @app.on_message((filters.group) & filters.command("reboot"))
 def group_info(client, message):
-    messager = app.send_message(message.chat.id, "💤Riavvio in corso...💤")
-    commands.reboot(message, messager)
+    if group.verify_admin(message.from_user.id, message.chat.id) == True:
+        messager = app.send_message(message.chat.id, "💤Riavvio in corso...💤")
+        commands.reboot(message, messager)
+        return
+    else:
+        app.send_message(message.chat.id, "Non sei admin di questo gruppo!", reply_to_message_id=message.message_id)
 
 
 @app.on_callback_query(filters.regex('set_privacy'))
 def set_privacy(client, callback_query):
-    group.set_privacy(callback_query)
+    if group.verify_admin(callback_query.from_user.id, callback_query.message.chat.id) == True:
+        group.set_privacy(callback_query)
+        return
+    else:
+        callback_query.answer("Non sei admin di questo gruppo!", show_alert=True)
 
 
 @app.on_callback_query(filters.regex("set_gift"))
 def set_gift(client, callback_query):
-    group.set_gift(callback_query)
+    if group.verify_admin(callback_query.from_user.id, callback_query.message.chat.id) == True:
+        group.set_gift(callback_query)
+        return
+    else:
+        callback_query.answer("Non sei admin di questo gruppo!", show_alert=True)
+    
 
 
 @app.on_message(filters.chat(SUPER_USER) & filters.command("info"))
