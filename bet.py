@@ -23,7 +23,6 @@ def choice(callback_query):
             match callback_query.data:
                 case "yes": yes_choice(callback_query)
                 case "nope": no_choice(callback_query)
-            write(callback_query)
     else:
         callback_query.answer(
             "Mi dispiace, non puoi più scommettere perchè il sondaggio è terminato :(", show_alert=True)
@@ -51,6 +50,7 @@ def yes_choice(callback_query):
         if ((quantity[0][0]*2) + (quantity[0][1]-1)) < 30:
             db.modify_db("UPDATE `yes_bets` SET `quantity` = %s WHERE `id_user` = %s",
                          (quantity[0][0]+1, callback_query.from_user.id))
+            write(callback_query)
         else:
             callback_query.answer(
                 "Hai raggiunto il massimo di puntate disponibili!")
@@ -79,6 +79,7 @@ def no_choice(callback_query):
         if ((quantity[0][0]*2) + (quantity[0][1])) < 30:
             db.modify_db("UPDATE `no_bets` SET `quantity` = %s WHERE `id_user` = %s",
                          (quantity[0][0]+1, callback_query.from_user.id))
+            write(callback_query)
         else:
             callback_query.answer(
                 "Hai raggiunto il massimo di puntate disponibili!")
@@ -171,8 +172,8 @@ def remove(id_group, state):
             ini.time_scheduler()
 
 
-def bet_fun(message):
-    id = message.chat.id
+
+def bet_fun(id):
     if db.query_db("SELECT `id_group` FROM `groups` WHERE `id_group` = %s", (id,)) == []:
         ini.app.send_message(
             id, "Gruppo non trovato :(\nAssicurati di aver segnalato il gruppo al bot con il comando /add !")
