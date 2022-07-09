@@ -37,14 +37,14 @@ def ramdom_gen(limit):
 
 def select_group():
     global group_id
-    query = db.query_db_no_value("SELECT `id_group` FROM `groups`")
+    query = db.query_db_no_value("SELECT `id_group` FROM `groups` ORDER BY `tot_cookie` ASC")
     selected = []
     flag = False  # gruppo piccolo
     if len(query) >= 2:
         srand = ramdom_gen(101)
         for groups in query:
             try:
-                temp_info = app.get_chat_members_count(groups[0])
+                group_members = app.get_chat_members_count(groups[0])
             except errors.ChannelInvalid:
                 group.remove_error(groups[0])
                 continue
@@ -56,27 +56,27 @@ def select_group():
                 continue
             if srand < 10:  # 0 a 9   (10%)
                 flag = True
-                if temp_info >= 500:  # 500
+                if group_members >= 500:  # 500
                     selected.append(groups[0])
                     continue
             elif srand < 10 + 15:  # 10 a 24     (15%)
                 flag = False
-                if temp_info < 10:  # 0 a 9
+                if group_members < 10:  # 0 a 9
                     selected.append(groups[0])
                     continue
-            elif srand < 10 + 15 + 20:  # 25 a 44    (20%)
+            elif srand < 10 + 15 + 25:  # 25 a 49    (25%)
                 flag = False
-                if temp_info >= 10 and temp_info < 50:  # 10 a 49
+                if group_members >= 10 and group_members < 50:  # 10 a 49
                     selected.append(groups[0])
                     continue
-            elif srand < 10 + 15 + 20 + 25:  # 45 a 69    (25%)
+            elif srand < 10 + 15 + 25 + 30:  # 45 a 79    (30%)
                 flag = True
-                if temp_info >= 50 and temp_info < 100:  # 50 a 99
+                if group_members >= 50 and group_members < 100:  # 50 a 99
                     selected.append(groups[0])
                     continue
-            elif srand <= 10 + 15 + 20 + 25 + 30:  # 70 a 100     (30%)
+            elif srand <= 10 + 15 + 25 + 30 + 20:  # 70 a 100     (20%)
                 flag = True
-                if temp_info >= 100 and temp_info < 500:  # da 50 a 499
+                if group_members >= 100 and group_members < 500:  # da 50 a 499
                     selected.append(groups[0])
                     continue
         if len(selected) >= 2:
@@ -105,16 +105,16 @@ def verify_group(flag):
     definitive = groups.copy()
     max = 0
     if flag == True:  # gruppo grande
-        max = 4
+        max = 6
     else:   #gruppo piccolo
-        max = 1
+        max = 3
     while len(groups) > max:
         groups.pop(0)
     if str(group_id) in groups:
         log_message("Gruppo scelto uguale al precedente!")
         select_group()
         return
-    while len(definitive) > 9:
+    while len(definitive) > 6:
         definitive.pop(0)
     definitive.append(group_id)
     f.close()
@@ -298,7 +298,7 @@ def removec(client, message):
 @app.on_message((filters.group) & filters.command("bet"))
 def betc(client, message):
     if group.verify_admin(message.from_user.id, message.chat.id) == True:
-        bet.bet_fun(message)
+        bet.bet_fun(message.chat.id)
     else:
         app.send_message(message.chat.id, "Non sei admin di questo gruppo!", reply_to_message_id=message.message_id)
 
@@ -359,6 +359,11 @@ def force_cookie(client, message):
 @app.on_message(filters.chat(SUPER_USER) & filters.command("force_close"))
 def force_result(client, message):
     commands.manual_close_bet()
+
+
+@app.on_message(filters.chat(SUPER_USER) & filters.command("force_bet"))
+def force_result(client, message):
+    commands.manual_open_bet()
 
 
 @app.on_message(filters.chat(SUPER_USER) & filters.command("close_id"))

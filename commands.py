@@ -55,6 +55,13 @@ def manual_close_bet():
     return
 
 
+def manual_open_bet():
+    ini.log_message("Ho avviato le scommesse manualmente")
+    query = db.query_db_no_value("SELECT `id_group` FROM `groups` WHERE `id_group` NOT IN (SELECT `id_group` FROM `bets`)")
+    for element in query:
+        bet.bet_fun(element[0])
+
+
 def close_bet_by_id(message):
     info = message.text
     info = info.split(" ")
@@ -301,3 +308,4 @@ def give(message):
                  (query[0][1]-int(command[1]), message.from_user.id))
     ini.app.send_message(
         message.chat.id, f"Ho correttamente donato {command[1]} biscotti a {receiver.mention}!", reply_to_message_id=message.message_id)
+    cookies.verify_win(receiver.id)

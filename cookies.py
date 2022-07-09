@@ -37,7 +37,7 @@ def create_list():
             text += f"\n{'🥇' if x==0 else '🥈' if x==1 else '🥉' if x==2 else ''} {totale[x][2] if totale[x][2]!=None else totale[x][1]}: {totale[x][3]}"
         except:
             continue
-    text += "\n\nPer vedere la classifica completa, visita il <a href='biscotti.uk.to'>sito</a>!"
+    text += "\n\nPer vedere la classifica completa, visita il <a href='https://bit.ly/3ODSCXO'>sito</a>!"
     return text
 
 
@@ -46,7 +46,7 @@ def win(winner, group):
         "SELECT `id_group` FROM `groups` WHERE `id_group` != %s", (group,))
     for element in all_group:
         ini.app.send_message(
-            element[0], f"EVVIVA! Questa sessione è stata vinta da {winner.mention}!🥳")
+            element[0], f"E' iniziata una nuova sessione🤩. State in guardia, il biscotto è sempre dietro l'angolo🙈")
 
 
 def try_biscotto(chat_group):
@@ -78,7 +78,7 @@ def try_biscotto(chat_group):
         ini.restart()
         return
     try:
-        ini.scheduler.add_job(expired, 'interval',  hours=1,
+        ini.scheduler.add_job(expired, 'interval',  minutes=30,
                             args=(bisquit,), id=f"expired{bisquit.message_id}")
     except:
         ini.log_message(
@@ -184,7 +184,7 @@ def try_taken_query(callback_query):
                  (callback_query.message.chat.title, callback_query.message.chat.id))
     ini.download_propic(callback_query)
     ini.app.edit_message_text(
-        callback_query.message.chat.id, callback_query.message.mssage_id, text)
+        callback_query.message.chat.id, callback_query.message.message_id, text)
     verify_win(callback_query.from_user.id, callback_query.message.chat.id)
     return
 
@@ -254,17 +254,11 @@ def verify_win(user_id, group_id):
     quantity = bisquit[0][0]
     sessionqa = bisquit[0][1]
     user = ini.app.get_users(user_id)
-    if quantity == 10:
-        ini.app.send_message(group_id,
-                             f"{user.mention} ha raggiunto i 10 biscotti!🎊")
-        return
-    elif quantity == 20:
-        ini.app.send_message(group_id,
-                             f"{user.mention} ha raggiunto i 20 biscotti!🎊")
-        return
-    elif quantity == 30:
-        query = db.query_db(
-            "SELECT `gift` FROM `groups` WHERE `id_group` = %s", (group_id,))
+    match quantity:
+        case 10:    ini.app.send_message(group_id,f"{user.mention} ha raggiunto i 10 biscotti!🎊")
+        case 20:    ini.app.send_message(group_id,f"{user.mention} ha raggiunto i 20 biscotti!🎊")
+    if quantity >= 30:    
+        query = db.query_db("SELECT `gift` FROM `groups` WHERE `id_group` = %s", (group_id,))
         ini.last_winner = user_id
         win(user, group_id)
         if query[0][0] == 1 and win_check(user_id) == True:  # si + vittoria confermata
