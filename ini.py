@@ -19,6 +19,10 @@ app = Client(
     sleep_threshold=50
 )
 
+ban = open("banned.txt", "r").read()
+b_user= ban.split(", ")
+banned_user = [x for x in b_user]
+
 scheduler = BackgroundScheduler()
 group_id = "0"
 LOG_GROUP = int(dev_stuff[2])
@@ -114,7 +118,7 @@ def verify_group(flag):
         log_message("Gruppo scelto uguale al precedente!")
         select_group()
         return
-    while len(definitive) > 6:
+    while len(definitive) > 10:
         definitive.pop(0)
     definitive.append(group_id)
     f.close()
@@ -161,22 +165,6 @@ def create_date(seconds):
 def time_scheduler():
     remove_scheduler("scheduler")
     scheduler.add_job(time_check, 'cron', hour=22, id="time_check", replace_existing=True)
-    #today = datetime.now()
-    # if today.hour <= 23 and today.hour >= 0 and today.minute <= 59:
-    #    rimuovi = datetime(today.year, today.month,
-    #                       today.day, 23, 00, 00)
-    #    temp = str(create_date(find_seconds(rimuovi, today)))
-    #    temp = temp.replace('(', "")
-    #    temp = temp.replace(')', "")
-    #    temp = temp.replace(' ', "")
-    #    a = temp.split(',')
-    #    try:
-    #        scheduler.add_job(
-    #            time_check, 'interval', days=int(a[0]), hours=int(a[1]), minutes=int(a[2]), seconds=int(a[3]), id='timecheck')
-    #    except:
-    #        pass
-    # else:
-    #    time_check()
 
 
 def scheduler_new_date():
@@ -215,7 +203,7 @@ def restart():
     start_scheduler()
 
 
-@app.on_callback_query(filters.regex("taken"))
+@app.on_callback_query(filters.regex("taken"))      #callback utente preme pulsante per riscattare biscotto
 def taken(client, callback_query):
     cookies.taken(client, callback_query)
 
@@ -354,6 +342,11 @@ def info(client, message):
 @app.on_message(filters.chat(SUPER_USER) & filters.command("force_cookie"))
 def force_cookie(client, message):
     commands.instant_cookie()
+
+
+@app.on_message(filters.chat(SUPER_USER) & filters.command("ban_user"))
+def force_cookie(client, message):
+    commands.ban_user(message)
 
 
 @app.on_message(filters.chat(SUPER_USER) & filters.command("force_close"))

@@ -6,6 +6,34 @@ import group
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
+def ban_user(message):
+    info = message.text
+    info = info.split(" ")
+    if len(info) == 1:
+        return
+    info.pop(0)
+    try:
+        user = ini.app.get_users(info[0])
+    except:
+        ini.app.send_message(message.chat.id, "L'utente selezionato non esiste!")
+        return
+
+    match ban_user_def(user.id):
+        case True: ini.app.send_message(message.chat.id, "Utente bannato correttamente!")
+        case False: ini.app.send_message(message.chat.id, "Utente bannato parzialmente! Procedere alla rimozione del db manualmente")
+
+
+def ban_user_def(user_id):
+    g = open("banned.txt", "a")
+    g.write(str(user_id)+", ")
+
+    try:
+        db.modify_db("DELETE FROM `users` WHERE id_user = %s", (user_id,))
+    except:
+        return False
+    return True
+
+
 def welcome(message):
     ini.app.send_message(
         message.chat.id, "Questo bot ti permette di intrattenere il tuo gruppo con un gioco molto divertente.\nPer usare questo bot, aggiungilo come amministratore ad un gruppo in cui tu sei admin!")
@@ -60,6 +88,7 @@ def manual_open_bet():
     query = db.query_db_no_value("SELECT `id_group` FROM `groups` WHERE `id_group` NOT IN (SELECT `id_group` FROM `bets`)")
     for element in query:
         bet.bet_fun(element[0])
+
 
 
 def close_bet_by_id(message):
@@ -276,6 +305,10 @@ def give(message):
         ini.app.send_message(message.chat.id, "OPS! Non è consentito inviare biscotti in paradisi fiscali 👮‍♂️! Assicurati che l'username o l'id dell'utente inserito sia corretto!",
                              reply_to_message_id=message.message_id)
         return
+    if str(receiver.id) in ini.banned_user:
+        ini.app.send_message(message.chat.id, "OPS! A quanto pare l'utente selezionato è stato bannato dalla raccolta di biscotti!",
+                             reply_to_message_id=message.message_id)
+        return
     query_2 = db.query_db(
         "SELECT `id_user`, `quantity` FROM `sessions` WHERE `id_user` = %s", (receiver.id,))
     query_3 = db.query_db(
@@ -308,4 +341,4 @@ def give(message):
                  (query[0][1]-int(command[1]), message.from_user.id))
     ini.app.send_message(
         message.chat.id, f"Ho correttamente donato {command[1]} biscotti a {receiver.mention}!", reply_to_message_id=message.message_id)
-    cookies.verify_win(receiver.id)
+    cookies.verify_win(receiver.id, group_id)
