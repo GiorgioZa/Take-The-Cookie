@@ -122,6 +122,8 @@ def expired(bisquit):
 
 
 def taken_query(callback_query):
+    if str(callback_query.from_user.id) in ini.banned_user:
+        return
     if ini.is_first == True:  # nessuno ha ancora preso il biscotto
         ini.is_first = False
         try_taken_query(callback_query)
@@ -190,6 +192,8 @@ def try_taken_query(callback_query):
 
 
 def taken(client, callback_query):
+    if str(callback_query.from_user.id) in ini.banned_user:
+        return
     if ini.is_first == True:
         ini.is_first = False
         try_taken(client, callback_query)
@@ -248,11 +252,15 @@ def try_taken(client, callback_query):
 
 def verify_win(user_id, group_id):
     bisquit = db.query_db(
-        "SELECT `quantity`, `session` FROM `sessions` s JOIN `users` u ON s.id_user = u.id_user WHERE s.id_user = %s", (user_id,))
+        "SELECT `quantity`, `id_group` `session` FROM `sessions` s JOIN `users` u ON s.id_user = u.id_user WHERE s.id_user = %s", (user_id,))
     if bisquit == []:
         return
-    quantity = bisquit[0][0]
-    sessionqa = bisquit[0][1]
+
+    if group_id == 0:
+        group_id = bisquit[0][1]
+        
+    quantity = int(bisquit[0][0])
+    sessionqa = int(bisquit[0][1])
     user = ini.app.get_users(user_id)
     match quantity:
         case 10:    ini.app.send_message(group_id,f"{user.mention} ha raggiunto i 10 biscotti!🎊")

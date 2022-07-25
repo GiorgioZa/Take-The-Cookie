@@ -10,6 +10,8 @@ def stop_bet(callback_query):
 
 
 def choice(callback_query):
+    if str(callback_query.from_user.id) in ini.banned_user:
+        return
     group_bet = db.query_db(
         "SELECT `closed` FROM `bets` WHERE `id_group` = %s", (callback_query.message.chat.id,))
     if group_bet != [] and group_bet[0][0] == 0:
