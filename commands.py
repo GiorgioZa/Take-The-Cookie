@@ -15,7 +15,8 @@ def ban_user(message):
     try:
         user = ini.app.get_users(info[0])
     except:
-        ini.app.send_message(message.chat.id, "L'utente selezionato non esiste!")
+        ini.app.send_message(
+            message.chat.id, "L'utente selezionato non esiste!")
         return
 
     match ban_user_def(user.id):
@@ -41,7 +42,7 @@ def welcome(message):
 
 
 def how_work(message):
-    ini.app.send_message(message.chat.id, "Per avviare la raccolta dei biscotti, utilizza il comando /add@TakeTheCookieBot, in questo modo dirai al bot che il tuo gruppo è pronto a ricevere dei gustosi biscotti! Inoltre, se vorrai rendere la sfida molto più esaltante, potrai attivare la ricezione dei premi automatici dal comando /groupinfo@TakeTheCookieBot !")
+    ini.app.send_message(message.chat.id, "Per avviare la raccolta dei biscotti, utilizza il comando /add@TakeTheCookieBot, in questo modo dirai al bot che il tuo gruppo è pronto a ricevere dei gustosi biscotti! Se vorrai rendere la sfida molto più esaltante, potrai attivare la ricezione dei premi automatici dal comando /groupinfo@TakeTheCookieBot !")
     return
 
 
@@ -85,10 +86,10 @@ def manual_close_bet():
 
 def manual_open_bet():
     ini.log_message("Ho avviato le scommesse manualmente")
-    query = db.query_db_no_value("SELECT `id_group` FROM `groups` WHERE `id_group` NOT IN (SELECT `id_group` FROM `bets`)")
+    query = db.query_db_no_value(
+        "SELECT `id_group` FROM `groups` WHERE `id_group` NOT IN (SELECT `id_group` FROM `bets`)")
     for element in query:
         bet.bet_fun(element[0])
-
 
 
 def close_bet_by_id(message):

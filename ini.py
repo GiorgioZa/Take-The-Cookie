@@ -20,7 +20,7 @@ app = Client(
 )
 
 ban = open("banned.txt", "r").read()
-b_user= ban.split(", ")
+b_user = ban.split(", ")
 banned_user = [x for x in b_user]
 
 scheduler = BackgroundScheduler()
@@ -39,9 +39,11 @@ def ramdom_gen(limit):
     random.seed()
     return random.randrange(limit)
 
+
 def select_group():
     global group_id
-    query = db.query_db_no_value("SELECT `id_group` FROM `groups` ORDER BY `tot_cookie` ASC")
+    query = db.query_db_no_value(
+        "SELECT `id_group` FROM `groups` ORDER BY `tot_cookie` ASC")
     selected = []
     flag = False  # gruppo piccolo
     if len(query) >= 2:
@@ -49,13 +51,7 @@ def select_group():
         for groups in query:
             try:
                 group_members = app.get_chat_members_count(groups[0])
-            except errors.ChannelInvalid:
-                group.remove_error(groups[0])
-                continue
-            except errors.ChannelPrivate:
-                group.remove_error(groups[0])
-                continue
-            except errors.PeerIdInvalid:
+            except (errors.ChannelInvalid, errors.ChannelPrivate, errors.PeerIdInvalid):
                 group.remove_error(groups[0])
                 continue
             if srand < 10:  # 0 a 9   (10%)
@@ -108,10 +104,9 @@ def verify_group(flag):
             groups.pop()
     definitive = groups.copy()
     max = 0
-    if flag == True:  # gruppo grande
-        max = 6
-    else:   #gruppo piccolo
-        max = 3
+    match flag:
+        case True: max = 6  # gruppo grande
+        case False: max = 3  # gruppo piccolo
     while len(groups) > max:
         groups.pop(0)
     if str(group_id) in groups:
@@ -150,21 +145,10 @@ def start_scheduler():
     time_scheduler()
 
 
-def find_seconds(dt2, dt1):
-    timedelta = dt2 - dt1
-    return timedelta.days * 24 * 3600 + timedelta.seconds
-
-
-def create_date(seconds):
-    minutes, seconds = divmod(seconds, 60)
-    hours, minutes = divmod(minutes, 60)
-    days, hours = divmod(hours, 24)
-    return (abs(days), hours, minutes, seconds)
-
-
 def time_scheduler():
     remove_scheduler("scheduler")
-    scheduler.add_job(time_check, 'cron', hour=22, id="time_check", replace_existing=True)
+    scheduler.add_job(time_check, 'cron', hour=22,
+                      id="time_check", replace_existing=True)
 
 
 def scheduler_new_date():
@@ -178,6 +162,7 @@ def scheduler_new_date():
         log_message(f"Prossimo biscotto tra: {a}h:{b}m:{c}s")
     except:
         restart()
+
 
 
 def time_check():
@@ -203,7 +188,8 @@ def restart():
     start_scheduler()
 
 
-@app.on_callback_query(filters.regex("taken"))      #callback utente preme pulsante per riscattare biscotto
+# callback utente preme pulsante per riscattare biscotto
+@app.on_callback_query(filters.regex("taken"))
 def taken(client, callback_query):
     cookies.taken(client, callback_query)
 
@@ -219,18 +205,50 @@ def expired_query(client, callback_query):
 
 
 def download_propic(user):
+    user_id = user.from_user.id
     try:
         app.download_media(user.from_user.photo.big_file_id,
-                           f"static/img/{user.from_user.id}.png")
+                           f"static/img/{user_id}.png")
     except:
         pass
-    if os.path.exists(f"static/img/{user.from_user.id}.png"):
+    if os.path.exists(f"static/img/{user_id}.png"):
         db.modify_db("UPDATE `users` SET `propic` = %s WHERE `id_user` = %s",
-                     (1, user.from_user.id))  # true
+                     (1, user_id))  # true
     else:
         db.modify_db("UPDATE `users` SET `propic` = %s WHERE `id_user` = %s",
-                     (0, user.from_user.id))  # false
+                     (0, user_id))  # false
     return
+    
+
+@app.on_message((filters.private) & filters.command("start"))
+def start(client, message):
+    commands.welcome(message)
+
+
+@app.on_message((filters.group) & filters.command('start'))
+def start_group(client, message):
+    commands.welcome(message)
+    commands.how_work(message)
+
+
+@app.on_message((filters.private) & filters.command("add"))
+def addp(client, message):
+    commands.welcome(message)
+
+
+@app.on_message((filters.group) & filters.command("add"))
+def add(client, message):
+    group.add_group(message)
+
+
+@app.on_message(filters.command('remove'))
+def removec(client, message):
+    if group.verify_admin(message.from_user.id, message.chat.id) == True:
+        group.remove_group(message.chat.id, message.chat.title)
+        return
+    else:
+        app.send_message(message.chat.id, "Non sei admin di questo gruppo!",
+                         reply_to_message_id=message.message_id)
 
 
 @app.on_callback_query(filters.regex("end"))
@@ -248,39 +266,10 @@ def no_choice(client, callback_query):
     bet.choice(callback_query)
 
 
-@app.on_message((filters.private) & filters.command("start"))
-def start(client, message):
-    commands.welcome(message)
-
-
-@app.on_message((filters.group) & filters.command('start'))
-def start_group(client, message):
-    commands.welcome(message)
-    commands.how_work(message)
-
-
 @app.on_message(filters.command("dev"))
 def devc(client, message):
     commands.dev(message)
 
-
-@app.on_message((filters.private) & filters.command("add"))
-def addp(client, message):
-    commands.welcome(message)
-
-
-@app.on_message((filters.group) & filters.command("add"))
-def add(client, message):
-    group.add_group(message)
-
-
-@app.on_message(filters.command('remove'))
-def removec(client, message):
-    if group.verify_admin(message.from_user.id, message.chat.id) == True:
-        group.remove_group(message)
-        return
-    else:
-        app.send_message(message.chat.id, "Non sei admin di questo gruppo!", reply_to_message_id=message.message_id)
 
 
 @app.on_message((filters.group) & filters.command("bet"))
@@ -288,7 +277,9 @@ def betc(client, message):
     if group.verify_admin(message.from_user.id, message.chat.id) == True:
         bet.bet_fun(message.chat.id)
     else:
-        app.send_message(message.chat.id, "Non sei admin di questo gruppo!", reply_to_message_id=message.message_id)
+        app.send_message(message.chat.id, "Non sei admin di questo gruppo!",
+                         reply_to_message_id=message.message_id)
+
 
 @app.on_message(filters.command("list"))
 def listc(client, message):
@@ -312,7 +303,8 @@ def group_info(client, message):
         commands.reboot(message, messager)
         return
     else:
-        app.send_message(message.chat.id, "Non sei admin di questo gruppo!", reply_to_message_id=message.message_id)
+        app.send_message(message.chat.id, "Non sei admin di questo gruppo!",
+                         reply_to_message_id=message.message_id)
 
 
 @app.on_callback_query(filters.regex('set_privacy'))
@@ -321,7 +313,8 @@ def set_privacy(client, callback_query):
         group.set_privacy(callback_query)
         return
     else:
-        callback_query.answer("Non sei admin di questo gruppo!", show_alert=True)
+        callback_query.answer(
+            "Non sei admin di questo gruppo!", show_alert=True)
 
 
 @app.on_callback_query(filters.regex("set_gift"))
@@ -330,8 +323,8 @@ def set_gift(client, callback_query):
         group.set_gift(callback_query)
         return
     else:
-        callback_query.answer("Non sei admin di questo gruppo!", show_alert=True)
-    
+        callback_query.answer(
+            "Non sei admin di questo gruppo!", show_alert=True)
 
 
 @app.on_message(filters.chat(SUPER_USER) & filters.command("info"))
