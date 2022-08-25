@@ -30,6 +30,16 @@ def choice(callback_query):
             "Mi dispiace, non puoi più scommettere perchè il sondaggio è terminato :(", show_alert=True)
 
 
+def scale_bisquit(user_id):
+    user_qta = db.query_db(
+        "SELECT `quantity`, `global_quantity` FROM `sessions` s JOIN `users` u ON s.id_user = u.id_user WHERE u.id_user = %s ", 
+                (user_id,))
+    db.modify_db("UPDATE `sessions` SET `quantity` = %s WHERE `id_user` = %s",
+                (user_qta[0][0]-1, user_id))
+    db.modify_db("UPDATE `users` SET `global_quantity` = %s WHERE `id_user` = %s",
+                (user_qta[0][1]-1, user_id))
+
+
 def yes_choice(callback_query):
     is_there = db.query_db("SELECT `id_user`, `quantity` FROM `yes_bets` WHERE `id_user` = %s and `id_group` = %s", (
         callback_query.from_user.id, callback_query.message.chat.id))  # cerco se l'utente ha risposto già al sondaggio
@@ -45,18 +55,21 @@ def yes_choice(callback_query):
     if is_there == [] and group_bet_done != []:  # utente nessuna scommessa, gruppo scommessa avviata
         db.modify_db("INSERT INTO `yes_bets` VALUES (%s, %s, %s, %s)",
                      (group_bet_done[0][0], group_bet_done[0][1], callback_query.from_user.id, 1))
+        scale_bisquit(callback_query.from_user.id)
     # utente già scommesso nel sondaggio, gruppo scommessa avviata
     elif is_there != [] and group_bet_done != []:
         quantity = db.query_db(
-            "SELECT y.quantity, s.quantity  FROM `yes_bets` y JOIN `sessions` s ON y.id_user = s.id_user WHERE y.id_user = %s", (callback_query.from_user.id,))
+            "SELECT y.quantity, s.quantity  FROM `yes_bets` y JOIN `sessions` s ON y.id_user = s.id_user WHERE y.id_user = %s", 
+            (callback_query.from_user.id,))
         if ((quantity[0][0]*2) + (quantity[0][1]-1)) < 30:
             db.modify_db("UPDATE `yes_bets` SET `quantity` = %s WHERE `id_user` = %s",
                          (quantity[0][0]+1, callback_query.from_user.id))
-            write(callback_query)
+            scale_bisquit(callback_query.from_user.id)
         else:
             callback_query.answer(
                 "Hai raggiunto il massimo di puntate disponibili!")
             return
+    write(callback_query)
 
 
 def no_choice(callback_query):
@@ -74,6 +87,7 @@ def no_choice(callback_query):
     if is_there == [] and group_bet_done != []:  # utente nessuna scommessa, gruppo scommessa avviata
         db.modify_db("INSERT INTO `no_bets` VALUES (%s, %s, %s, %s)",
                      (group_bet_done[0][0], group_bet_done[0][1], callback_query.from_user.id, 1))
+        scale_bisquit(callback_query.from_user.id)
     # utente già scommesso nel sondaggio, gruppo scommessa avviata
     elif is_there != [] and group_bet_done != []:
         quantity = db.query_db(
@@ -81,11 +95,12 @@ def no_choice(callback_query):
         if ((quantity[0][0]*2) + (quantity[0][1])) < 30:
             db.modify_db("UPDATE `no_bets` SET `quantity` = %s WHERE `id_user` = %s",
                          (quantity[0][0]+1, callback_query.from_user.id))
-            write(callback_query)
+            scale_bisquit(callback_query.from_user.id)
         else:
             callback_query.answer(
                 "Hai raggiunto il massimo di puntate disponibili!")
             return
+    write(callback_query)
 
 
 def find_result(group_id):
@@ -108,6 +123,10 @@ def find_result(group_id):
         text += f"\n- {user_i.mention()} "
         text += f"x{element[1]} -> x{element[1]*2}; Totale: {user[0][0]+(element[1]*2)}"
         qta = user[0][0] + element[1]*2
+        if qta >= 30:
+            qta = 30
+        if qta <= 0:
+            qta = 0
         db.modify_db(
             "UPDATE `sessions` SET `quantity` = %s WHERE `id_user` = %s", (qta, element[0]))
         tot = user[0][1]
@@ -146,23 +165,26 @@ def remove(id_group, state):
                 # 2 = chiuso senza aver modificato il messaggio per errori
                 db.modify_db(
                     "UPDATE `bets` SET `closed` = %s WHERE `id_group` =%s", (2, id_group))
-                pass
+            except ini.errors.MessageIdInvalid:
+                # possibile messaggio sondaggio eliminato
+                db.modify_db(
+                    "DELETE FROM `bets` WHERE `id_group` =%s", (id_group,))
             yes = db.query_db(
                 "SELECT `id_user`, `quantity` FROM `yes_bets` WHERE id_group = %s ORDER BY `quantity` DESC", (id_group,))
             no = db.query_db(
                 "SELECT `id_user`, `quantity` FROM `no_bets` WHERE id_group = %s ORDER BY `quantity` DESC", (id_group,))
             text = "Risultato del sondaggio:\nSI:"
-            if yes == []:
-                text += "\n**NESSUNO**"
-            else:
+            
+            if yes == [] and no == []:
+                text += "Risultato del sondaggio: **NESSUNA SCOMMESSA**! *biscotto triste*.\n\nRicorda: per scommettere devi possedere almeno un biscotto :)!"
+            elif yes != [] and no == []:
                 for element in yes:
                     user = ini.app.get_users(element[0])
                     text += f"\n- {user.mention()} "
                     text += f"x{element[1]}"
-            text += "\nNO:"
-            if no == []:
-                text += "\n**NESSUNO**"
-            else:
+                text+="\nNO: **NESSUNA SCOMMESSA**"
+            elif yes == [] and no != []:
+                text+=" **NESSUNA SCOMMESSA**\nNO:"
                 for element in no:
                     user = ini.app.get_users(element[0])
                     text += f"\n- {user.mention()} "
@@ -174,7 +196,6 @@ def remove(id_group, state):
             ini.time_scheduler()
 
 
-
 def bet_fun(id):
     if db.query_db("SELECT `id_group` FROM `groups` WHERE `id_group` = %s", (id,)) == []:
         ini.app.send_message(
@@ -184,9 +205,9 @@ def bet_fun(id):
     if db.query_db("SELECT `id_group` FROM `bets` WHERE `id_group` = %s", (id,)) == []:
         ini.app.send_message(id, "Hai avviato una scommessa!\
             \nRegole:\
-            \n1)Per giocare puoi usare i tuoi biscotti riscattati durante la sessione.\
-            \n2)Puoi scegliere **solo** una delle due opzioni; In caso di vittoria, la quantità puntata ti verrà doppiata!\
-            \n3)Hai solo 1h di tempo (o meno se il biscotto arriva prima della chiusura del sondaggio) per poter scommettere.\
+            \n1)Per giocare puoi usare i tuoi biscotti raccolti durante la sessione.\
+            \n2)Puoi scegliere **SOLO** una delle due opzioni; In caso di vittoria, la quantità puntata ti verrà doppiata!\
+            \n3)Hai 1h di tempo (o meno se il biscotto arriva prima della chiusura del sondaggio) per poter scommettere.\
             \n4)Non puoi ritirare il voto quindi vota con attenzione 😝.\
             \n5)Puoi puntare al massimo il quantitativo di biscotti necessario per arrivare al totale di 29 biscotti (sempre che tu ne abbia così tanti a disposizione ;) )")
 
@@ -228,12 +249,6 @@ def write(cquery):
         text += f"\n- {user.mention}: "
         for x in range(element[1]):
             text += "🥠"
-    user_qta = db.query_db(
-        "SELECT `quantity`, `global_quantity` FROM `sessions` s JOIN `users` u ON s.id_user = u.id_user WHERE u.id_user = %s ", (cquery.from_user.id,))
-    db.modify_db("UPDATE `sessions` SET `quantity` = %s WHERE `id_user` = %s",
-                 (user_qta[0][0]-1, cquery.from_user.id))
-    db.modify_db("UPDATE `users` SET `global_quantity` = %s WHERE `id_user` = %s",
-                 (user_qta[0][1]-1, cquery.from_user.id))
     try:
         ini.app.edit_message_text(cquery.message.chat.id, cquery.message.message_id, text,
                                   reply_markup=InlineKeyboardMarkup(

@@ -46,7 +46,6 @@ def set_privacy(callback_query):
             ]))
     except:
         pass
-    
 
 
 def verify_admin(id_admin, id_group):
@@ -91,27 +90,27 @@ def found_admin(id):
     return admin
 
 
-def remove_group(message):
+def remove_group(group_id, group_name):
     value = db.query_db(
-        "SELECT `id_group` FROM `groups` WHERE `id_group` = %s", (message.chat.id,))
+        "SELECT `id_group` FROM `groups` WHERE `id_group` = %s", (group_id,))
     if value != []:
         db.modify_db(db.DELETE_QUERY_GROUPS,
-                     (message.chat.id,))
+                     (group_id,))
         ini.app.send_message(
-            message.chat.id, "Ho rimosso questo gruppo dalla lista dei partecipanti! Tutti coloro che avevano raccolto biscotti in questa sessione da questo gruppo sono stati eliminati!")
+            group_id, "Ho rimosso questo gruppo dalla lista dei partecipanti! Tutti coloro che avevano raccolto biscotti in questa sessione da questo gruppo sono stati eliminati!")
         ini.log_message(
-            f"Ho rimosso un nuovo gruppo: {message.chat.title}")   
+            f"Ho rimosso un nuovo gruppo: {group_name}")
     else:
         ini.app.send_message(
-            message.chat.id, "Questo gruppo non risulta nella lista dei partecipanti... L'informazione è errata? Perchè non contatti @GiorgioZa?")
-    admin = []
+            group_id, "Questo gruppo non risulta nella lista dei partecipanti... L'informazione è errata? Perchè non contatti @GiorgioZa?")
 
 
 def add_group(message):
     query = db.query_db(
         "SELECT `id_group` FROM `groups` WHERE `id_group` = %s", (message.chat.id,))
     if query == []:  # se il gruppo non è nel database
-        if verify_admin(message.from_user.id, message.chat.id) == True:  # chi ha fatto il comando è admin?
+        # chi ha fatto il comando è admin?
+        if verify_admin(message.from_user.id, message.chat.id) == True and str(message.from_user.id) in ini.banned_user:
             add_group_real(message)
             ini.app.send_message(
                 message.chat.id, "Gruppo aggiunto! Da adesso può ricevere biscotti in qualsiasi momento... Tenete gli occhi aperti👀")
@@ -125,7 +124,8 @@ def add_group(message):
 
 def add_group_real(message):
     chat = ini.app.get_chat(message.chat.id)
-    db.modify_db("INSERT INTO `groups`(`id_group`, `name`) VALUES (%s, %s)", (message.chat.id,chat.title))  # aggiungi il gruppo al db
+    db.modify_db("INSERT INTO `groups`(`id_group`, `name`) VALUES (%s, %s)",
+                 (message.chat.id, chat.title))  # aggiungi il gruppo al db
     ini.log_message(
         f"Ho aggiunto un nuovo gruppo: {chat.title} da parte di: {message.from_user.username if message.from_user.username!=None else message.from_user.firstname}")
 
