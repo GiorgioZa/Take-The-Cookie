@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="shortcut icon" type="image/icon" href="{{ url_for('static', filename='img/favicon.png') }}" />
+{% endblock %}
+
+{% block body %}
+<section class="main-content">
+    <div class="container">
+        <h1 style="text-align: center;">BISCOTTIH?!?</h1>
+        <h5 style="text-align: center; margin: 0;">Classifica completa di tutti i gruppi ordinati per numero di biscotti ricevuti!</h5>
+        <p style="text-align: center; color: gray; margin: 0;">Per vedere la classifica di sessione, <a href="/index">clicca qui!</a></p>
+        <p style="text-align: center; color: gray; margin: 0;">Per vedere la classifica globale, <a href="/global">clicca qui!</a></p>
+        </h5>
+        <br>
+        <br>
+        <div class="row podium">	<!-- For mobile devices -->
+            {% if number >= 1: %}
+            <div class="col-sm-4">
+                <div class="leaderboard-card leaderboard-card--first">
+                    <div class="leaderboard-card__top">
+                        <h3 class="text-center">🍪 {{groups[0]["n_cookie"]}}</h3>
+                    </div>
+                    <div class="leaderboard-card__body">
+                        <div class="text-center">
+                            {% if groups[0]['propic'] != 0 %}
+                            <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
+                            {% else %}
+                            <img src="../static/img/groups/default.png" class="circle-img mb-2" alt="User Img">
+                            {%endif%}
+                            <h5 class="mb-0">{{groups[0]['name']}}</h5>
+                            <hr>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {%endif%}
+            {% if number >= 2: %}
+            <div class="col-sm-4">
+                <div class="leaderboard-card leaderboard-card--second">
+                    <div class="leaderboard-card__top">
+                        <h3 class="text-center">🍪 {{groups[1]["n_cookie"]}}</h3>
+                    </div>
+                    <div class="leaderboard-card__body">
+                        <div class="text-center">
+                            {% if groups[0]['propic'] != 0 %}
+                            <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
+                            {% else %}
+                            <img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
+                            {%endif%}
+                            <h5 class="mb-0">{{groups[0]['name']}}</h5>
+                            <hr>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {%endif%}
+            {% if number >= 3: %}
+            <div class="col-sm-4">
+                <div class="leaderboard-card leaderboard-card--third">
+                    <div class="leaderboard-card__top">
+                        <h3 class="text-center">🍪 {{groups[2]["n_cookie"]}}</h3>
+                    </div>
+                    <div class="leaderboard-card__body">
+                        <div class="text-center">
+                            {% if groups[0]['propic']!= 0 %}
+                            <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
+                            {% else %}
+                            <img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
+                            {%endif%}
+                            <h5 class="mb-0">{{groups[0]['name']}}</h5>
+                            <hr>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {%endif%}
+        </div>
+
+        <div class="row">
+            {% if number >= 2: %}
+            <div class="col-sm-4">
+                <div class="leaderboard-card leaderboard-card--second">
+                    <div class="leaderboard-card__top">
+                        <h3 class="text-center">🍪 {{groups[1]["n_cookie"]}}</h3>
+                    </div>
+                    <div class="leaderboard-card__body">
+                        <div class="text-center">
+                            {% if groups[0]['propic'] != 0 %}
+                            <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
+                            {% else %}
+                            <img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
+                            {%endif%}
+                            <h5 class="mb-0">{{groups[0]['name']}}</h5>
+                            <hr>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {%endif%}
+            {% if number >= 1: %}
+            <div class="col-sm-4">
+                <div class="leaderboard-card leaderboard-card--first">
+                    <div class="leaderboard-card__top">
+                        <h3 class="text-center">🍪 {{groups[0]["n_cookie"]}}</h3>
+                    </div>
+                    <div class="leaderboard-card__body">
+                        <div class="text-center">
+                            {% if groups[0]['propic'] != 0 %}
+                            <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
+                            {% else %}
+                            <img src="../static/img/groups/default.png" class="circle-img mb-2" alt="User Img">
+                            {%endif%}
+                            <h5 class="mb-0">{{groups[0]['name']}}</h5>
+                            <hr>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {%endif%}
+            {% if number >= 3: %}
+            <div class="col-sm-4">
+                <div class="leaderboard-card leaderboard-card--third">
+                    <div class="leaderboard-card__top">
+                        <h3 class="text-center">🍪 {{groups[2]["n_cookie"]}}</h3>
+                    </div>
+                    <div class="leaderboard-card__body">
+                        <div class="text-center">
+                            {% if groups[0]['propic']!= 0 %}
+                            <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
+                            {% else %}
+                            <img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
+                            {%endif%}
+                            <h5 class="mb-0">{{groups[0]['name']}}</h5>
+                            <hr>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {%endif%}
+        </div>
+        <h4 style="margin-top: 20px;">Classifica completa:</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Gruppo</th>
+                    <th>Biscotti ricevuti</th>
+                    <th>Data di inserimento</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for element in groups: %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            {% if element['propic']!= 0 %}
+                            <img src="../static/img/groups/{{element['_id']}}.png" class="circle-img mb-2" alt="User Img">
+                            {% else %}
+                            <img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
+                            {%endif%}
+                            <div class="user-info__basic">
+                                <h5 class="mb-0">{{element["name"]}}</h5>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <h4 class="mr-1">{{element["n_cookie"]}}</h4>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <h4 class="mr-1">{{element['date']}}</h4>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+<footer style="text-align: center; color: gray;">
+    <p>Classifica generata da <a href="https://t.me/TakeTheCookieBot">@TakeTheCookieBot</a> su telegram, segui <a
+            href="https://t.me/TakeTheCookie">TakeTheCookie</a>!</p>
+</footer>
+{% endblock %}

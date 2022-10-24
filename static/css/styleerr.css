@@ -16,6 +16,10 @@ body {
   min-height: 100vh;
   width: 100vw;
 }
+.subtitle {
+  color: #dedede;
+  font-size: x-small;
+}
 .message {
   text-align: center;
   margin: 0 auto 5rem auto;

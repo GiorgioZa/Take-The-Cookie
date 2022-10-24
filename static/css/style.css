@@ -39,6 +39,7 @@ body {
 
 .col-sm-4{
 	margin-bottom: 25px;
+	position: unset;
 }
 
 @media only screen and (min-width: 769px) {
@@ -62,11 +63,13 @@ body {
 	color: #fff;
 }
 .leaderboard-card.leaderboard-card--second .leaderboard-card__top {
-	background: linear-gradient(45deg, #c0c0c0, #dcdcdc);
+	/*#dcdcdc*/
+	background: linear-gradient(45deg, #c0c0c0, #bfab38);
 	color: #fff;
 }
 .leaderboard-card.leaderboard-card--third .leaderboard-card__top {
-	background: linear-gradient(45deg, #b87333, #ba8759);
+	/*#ba8759*/
+	background: linear-gradient(45deg, #f9dd6e, #b87333);
 	color: #fff;
 }
 .leaderboard-card__top {
@@ -95,6 +98,12 @@ img.circle-img.circle-img--small {
 	border-spacing: 0 15px;
 	border-collapse: separate;
 }
+
+.table thead{
+	position: sticky;
+}
+
+
 .table thead tr th,
 .table thead tr td,
 .table tbody tr th,
