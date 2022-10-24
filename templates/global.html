@@ -1,82 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
+{% block head %}
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+	<link rel="shortcut icon" type="image/icon" href="{{ url_for('static', filename='img/favicon.png') }}" />
+{% endblock %}
 
-<head>
-	<meta charset="UTF-8">
-	<title>Classifica Biscottini</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-	<link rel="stylesheet" type="text/css" href="static/style.css">
-	<link rel="shortcut icon" type="image/icon" href="../static/img/favicon.png" />
-</head>
-
-<body>
+{% block body %}
 	<section class="main-content">
 		<div class="container">
 			<h1 style="text-align: center;">BISCOTTIH?!?</h1>
 			<h5 style="text-align: center; margin: 0;">Classifica completa generale con tutti i raccoglitori di biscotti di sempre!</h5> 
-            <p style="text-align: center; color: gray;">Per tornare alla classifica di sessione, <a href="/index">clicca qui!</a></p>
+            <p style="text-align: center; color: gray; margin: 0;">Per tornare alla classifica di sessione, <a href="/index">clicca qui!</a></p>
+			<p style="text-align: center; color: gray; margin: 0;">Per vedere la classifica dei gruppi, <a href="/group">clicca qui!</a></p>
+			</h5>
 			<br>
 			<br>
 			<div class="row podium">	<!-- For mobile devices -->
-				{% if number >= 1 or number==1: %}
+				{% if number >= 1: %}
 				<div class="col-sm-4">
 					<div class="leaderboard-card leaderboard-card--first">
 						<div class="leaderboard-card__top">
-							<h3 class="text-center">🍪 {{user[0][3]}}</h3>
+							<h3 class="text-center">🍪 {{users[0]["tot_qta"]}}</h3>
 						</div>
 						<div class="leaderboard-card__body">
 							<div class="text-center">
-								{% if user[0][5] != 0 %}
-								<img src="../static/img/{{user[0][0]}}.png" class="circle-img mb-2" alt="User Img">
+								{% if users[0]["propic"] != 0 %}
+								<img src="../static/img/{{users[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
 								{% else %}
-								<img src="../static/img/disable.png" class="circle-img mb-2" alt="User Img">
+								<img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
 								{%endif%}
-								<h5 class="mb-0">{{user[0][1]}}</h5>
-								<p class="text-muted mb-0">{{user[0][2]}}</p>
+								<h5 class="mb-0">{{users[0]['name']}}</h5>
+								<p class="text-muted mb-0">{{users[0]['username']}}</p>
 								<hr>
 							</div>
 						</div>
 					</div>
 				</div>
 				{%endif%}
-				{% if number >= 2 or number==2: %}
+				{% if number >= 2: %}
 				<div class="col-sm-4">
 					<div class="leaderboard-card leaderboard-card--second">
 						<div class="leaderboard-card__top">
-							<h3 class="text-center">🍪 {{user[1][3]}}</h3>
+							<h3 class="text-center">🍪 {{users[1]["qta"]}}</h3>
 						</div>
 						<div class="leaderboard-card__body">
 							<div class="text-center">
-								{% if user[1][5] != 0 %}
-								<img src="../static/img/{{user[1][0]}}.png" class="circle-img mb-2" alt="User Img">
+								{% if users[1]["propic"] != 0 %}
+								<img src="../static/img/{{users[1]['_id']}}.png" class="circle-img mb-2" alt="User Img">
 								{% else %}
-								<img src="../static/img/disable.png" class="circle-img mb-2" alt="User Img">
+								<img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
 								{%endif%}
-								<h5 class="mb-0">{{user[1][1]}}</h5>
-								<p class="text-muted mb-0">{{user[1][2]}}</p>
+								<h5 class="mb-0">{{users[1]['name']}}</h5>
+								<p class="text-muted mb-0">{{users[1]['username']}}</p>
 								<hr>
 							</div>
 						</div>
 					</div>
 				</div>
 				{%endif%}
-				{% if number >= 3 or number==3: %}
+				{% if number >= 3: %}
 				<div class="col-sm-4">
 					<div class="leaderboard-card leaderboard-card--third">
 						<div class="leaderboard-card__top">
-							<h3 class="text-center">🍪 {{user[2][3]}}</h3>
+							<h3 class="text-center">🍪 {{users[2]["tot_qta"]}}</h3>
 						</div>
 						<div class="leaderboard-card__body">
 							<div class="text-center">
-								{% if user[2][5]!= 0 %}
-								<img src="../static/img/{{user[2][0]}}.png" class="circle-img mb-2" alt="User Img">
+								{% if users[2]["propic"]!= 0 %}
+								<img src="../static/img/{{users[2]['_id']}}.png" class="circle-img mb-2" alt="User Img">
 								{% else %}
-								<img src="../static/img/disable.png" class="circle-img mb-2" alt="User Img">
+								<img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
 								{%endif%}
-								<h5 class="mb-0">{{user[2][1]}}</h5>
-								<p class="text-muted mb-0">{{user[2][2]}}</p>
+								<h5 class="mb-0">{{users[2]['name']}}</h5>
+								<p class="text-muted mb-0">{{users[2]['username']}}</p>
 								<hr>
 							</div>
 						</div>
@@ -86,63 +81,63 @@
 			</div>
 
 			<div class="row">
-				{% if number >= 2 or number==2: %}
+				{% if number >= 2: %}
 				<div class="col-sm-4">
 					<div class="leaderboard-card leaderboard-card--second">
 						<div class="leaderboard-card__top">
-							<h3 class="text-center">🍪 {{user[1][3]}}</h3>
+							<h3 class="text-center">🍪 {{users[1]["tot_qta"]}}</h3>
 						</div>
 						<div class="leaderboard-card__body">
 							<div class="text-center">
-								{% if user[1][5] != 0 %}
-								<img src="../static/img/{{user[1][0]}}.png" class="circle-img mb-2" alt="User Img">
+								{% if users[1]["propic"] != 0 %}
+								<img src="../static/img/{{users[1]['_id']}}.png" class="circle-img mb-2" alt="User Img">
 								{% else %}
-								<img src="../static/img/disable.png" class="circle-img mb-2" alt="User Img">
+								<img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
 								{%endif%}
-								<h5 class="mb-0">{{user[1][1]}}</h5>
-								<p class="text-muted mb-0">{{user[1][2]}}</p>
+								<h5 class="mb-0">{{users[1]['name']}}</h5>
+								<p class="text-muted mb-0">{{users[1]['username']}}</p>
 								<hr>
 							</div>
 						</div>
 					</div>
 				</div>
 				{%endif%}
-				{% if number >= 1 or number==1: %}
+				{% if number >= 1: %}
 				<div class="col-sm-4">
 					<div class="leaderboard-card leaderboard-card--first">
 						<div class="leaderboard-card__top">
-							<h3 class="text-center">🍪 {{user[0][3]}}</h3>
+							<h3 class="text-center">🍪 {{users[0]["tot_qta"]}}</h3>
 						</div>
 						<div class="leaderboard-card__body">
 							<div class="text-center">
-								{% if user[0][5] != 0 %}
-								<img src="../static/img/{{user[0][0]}}.png" class="circle-img mb-2" alt="User Img">
+								{% if users[0]["propic"] != 0 %}
+								<img src="../static/img/{{users[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
 								{% else %}
-								<img src="../static/img/disable.png" class="circle-img mb-2" alt="User Img">
+								<img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
 								{%endif%}
-								<h5 class="mb-0">{{user[0][1]}}</h5>
-								<p class="text-muted mb-0">{{user[0][2]}}</p>
+								<h5 class="mb-0">{{users[0]['name']}}</h5>
+								<p class="text-muted mb-0">{{users[0]['username']}}</p>
 								<hr>
 							</div>
 						</div>
 					</div>
 				</div>
 				{%endif%}
-				{% if number >= 3 or number==3: %}
+				{% if number >= 3: %}
 				<div class="col-sm-4">
 					<div class="leaderboard-card leaderboard-card--third">
 						<div class="leaderboard-card__top">
-							<h3 class="text-center">🍪 {{user[2][3]}}</h3>
+							<h3 class="text-center">🍪 {{users[2]["tot_qta"]}}</h3>
 						</div>
 						<div class="leaderboard-card__body">
 							<div class="text-center">
-								{% if user[2][5]!= 0 %}
-								<img src="../static/img/{{user[2][0]}}.png" class="circle-img mb-2" alt="User Img">
+								{% if users[2]["propic"]!= 0 %}
+								<img src="../static/img/{{users[2]['_id']}}.png" class="circle-img mb-2" alt="User Img">
 								{% else %}
-								<img src="../static/img/disable.png" class="circle-img mb-2" alt="User Img">
+								<img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
 								{%endif%}
-								<h5 class="mb-0">{{user[2][1]}}</h5>
-								<p class="text-muted mb-0">{{user[2][2]}}</p>
+								<h5 class="mb-0">{{users[2]['name']}}</h5>
+								<p class="text-muted mb-0">{{users[2]['username']}}</p>
 								<hr>
 							</div>
 						</div>
@@ -160,29 +155,29 @@
 					</tr>
 				</thead>
 				<tbody>
-					{% for element in user: %}
+					{% for element in users: %}
 					<tr>
 						<td>
 							<div class="d-flex align-items-center">
-								{% if element[5]!= 0 %}
-								<img src="../static/img/{{element[0]}}.png" class="circle-img mb-2" alt="User Img">
+								{% if element["propic"]!= 0 %}
+								<img src="../static/img/{{element['_id']}}.png" class="circle-img mb-2" alt="User Img">
 								{% else %}
-								<img src="../static/img/disable.png" class="circle-img mb-2" alt="User Img">
+								<img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
 								{%endif%}
 								<div class="user-info__basic">
-									<h5 class="mb-0">{{element[1]}}</h5>
-									<p class="text-muted mb-0">{{element[2]}}</p>
+									<h5 class="mb-0">{{element["name"]}}</h5>
+									<p class="text-muted mb-0">{{element["username"]}}</p>
 								</div>
 							</div>
 						</td>
 						<td>
 							<div class="d-flex align-items-center">
-								<h4 class="mr-1">{{element[3]}}</h4>
+								<h4 class="mr-1">{{element["tot_qta"]}}</h4>
 							</div>
 						</td>
 						<td>
 							<div class="d-flex align-items-center">
-								<h4 class="mr-1">{{element[4]}}</h4>
+								<h4 class="mr-1">{{element['session_count']}}</h4>
 							</div>
 						</td>
 					</tr>
@@ -195,9 +190,4 @@
 		<p>Classifica generata da <a href="https://t.me/TakeTheCookieBot">@TakeTheCookieBot</a> su telegram, segui <a
 				href="https://t.me/TakeTheCookie">TakeTheCookie</a>!</p>
 	</footer>
-	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-</body>
-
-</html>
+{% endblock %}

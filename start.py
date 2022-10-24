@@ -1,5 +1,4 @@
-import ini
-
-
-ini.start_bot()
-ini.app.run()
+import Main
+# Main.start_scheduler()
+print("started")
+Main.app.run()

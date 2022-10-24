@@ -1,140 +1,113 @@
-import db
-import ini
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+import Main
+import User
+import pymongo
+import Db
+import asyncio
+from datetime import datetime
 
 
-def group_info(message):
-    group = db.query_db(
-        "SELECT * FROM `groups` WHERE `id_group` = %s", (message.chat.id,))
-    if group == []:
-        ini.app.send_message(
-            message.chat.id, "Gruppo non trovato *biscotto triste*")
-        return
-    tot_member = ini.app.get_chat_members_count(message.chat.id)
-    text = f"Nome: **{group[0][1]}**\nID: <code>{group[0][0]}</code>\nMembri: **{tot_member}**\nTotale biscotti: {group[0][2]}\nPremio: {'**Disattivato**' if group[0][4]==0 else '**Attivato**'}\nVisibilità: {'**Nascosta**' if group[0][3]==0 else '**Visibile**'}"
-    ini.app.send_message(message.chat.id, text, reply_markup=InlineKeyboardMarkup(
-        [
-            [InlineKeyboardButton("Visibilità", callback_data="set_privacy"), InlineKeyboardButton(
-                "Premio", callback_data="set_gift")],
-            [InlineKeyboardButton(
-                "Tutorial", url="https://t.me/TakeTheCookie/6")]
-        ]))
+async def group_info(group_name, group_id, message_id):
+    text = f"Statistiche del gruppo {group_name}\n"
+    group_info_temp = Db.groups.find({"_id": group_id})
+    group_info = []
+    for x in group_info_temp:
+        group_info.append(x)
+    group = await Main.app.get_chat(group_id)
+    text += f"- id: {group_id}\n\
+            - n° utenti: {group.members_count}\n\
+            - n° biscotti ricevuti: {group_info[0]['n_cookie']}\
+            - Privacy: **{'Nascosta' if group_info[0]['privacy']==0 else 'Visibile'}**\
+            - Premi: **{'Non attivi' if group_info[0]['gift']==0 else 'Attivi'}**"
+    match message_id:
+        case None:
+            await Main.app.send_message(group_id, text, reply_markup=Main.InlineKeyboardMarkup(
+                                        [
+                                            [Main.InlineKeyboardButton(
+                                                "Aggiorna", callback_data="update_group_stat")],
+                                            [Main.InlineKeyboardButton(
+                                                "Cambia Privacy", callback_data="set_privacy"),
+                                             Main.InlineKeyboardButton(
+                                                "Ricezione Premio", callback_data="set_gift")]
+                                        ]))
+        case _:
+            try:
+                await Main.app.edit_message_text(group_id, message_id, text, reply_markup=Main.InlineKeyboardMarkup(
+                    [
+                        [Main.InlineKeyboardButton(
+                            "Aggiorna", callback_data="update_group_stat")],
+                        [Main.InlineKeyboardButton(
+                            "Cambia Privacy", callback_data="set_privacy"),
+                         Main.InlineKeyboardButton(
+                            "Ricezione Premio", callback_data="set_gift")]
+                    ]))
+            except:
+                return
 
 
-def set_privacy(callback_query):
-    group = db.query_db("SELECT * FROM `groups` WHERE `id_group` = %s",
-                        (callback_query.message.chat.id,))
-    if group == []:
-        return
-    if group[0][3] == 1:
-        db.modify_db("UPDATE `groups` SET `privacy` = %s WHERE `id_group` = %s",
-                     (0, callback_query.message.chat.id))
-    else:
-        db.modify_db("UPDATE `groups` SET `privacy` = %s WHERE `id_group` = %s",
-                     (1, callback_query.message.chat.id))
-    group = db.query_db("SELECT * FROM `groups` WHERE `id_group` = %s",
-                        (callback_query.message.chat.id,))
-    tot_member = ini.app.get_chat_members_count(
-        callback_query.message.chat.id)
-    try:
-        ini.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id, f"Nome: **{group[0][1]}**\nID: <code>{group[0][0]}</code>\nMembri: **{tot_member}**\nTotale biscotti: {group[0][2]}\nPremio: {'**Disattivato**' if group[0][4]==0 else '**Attivato**'}\nVisibilità: {'**Nascosta**' if group[0][3]==0 else '**Visibile**'}", reply_markup=InlineKeyboardMarkup(
-            [
-                [InlineKeyboardButton("Visibilità", callback_data="set_privacy"), InlineKeyboardButton(
-                    "Premio", callback_data="set_gift")],
-                [InlineKeyboardButton(
-                    "Tutorial", url="https://t.me/TakeTheCookie/6")]
-            ]))
-    except:
-        pass
-
-
-def verify_admin(id_admin, id_group):
-    admin_group = found_admin(id_group)
-    if id_admin in admin_group:
-        return True
-    return False
-
-
-def set_gift(callback_query):
-    group = db.query_db("SELECT * FROM `groups` WHERE `id_group` = %s",
-                        (callback_query.message.chat.id,))
-    if group == []:
-        return
-    if group[0][4] == 1:
-        db.modify_db("UPDATE `groups` SET `gift` = %s WHERE `id_group` = %s",
-                     (0, callback_query.message.chat.id))
-    else:
-        db.modify_db("UPDATE `groups` SET `gift` = %s WHERE `id_group` = %s",
-                     (1, callback_query.message.chat.id))
-    group = db.query_db("SELECT * FROM `groups` WHERE `id_group` = %s",
-                        (callback_query.message.chat.id,))
-    tot_member = ini.app.get_chat_members_count(
-        callback_query.message.chat.id)
-    try:
-        ini.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id, f"Nome: **{group[0][1]}**\nID: <code>{group[0][0]}</code>\nMembri: **{tot_member}**\nTotale biscotti: {group[0][2]}\nPremio: {'**Disattivato**' if group[0][4]==0 else '**Attivato**'}\nVisibilità: {'**Nascosta**' if group[0][3]==0 else '**Visibile**'}", reply_markup=InlineKeyboardMarkup(
-            [
-                [InlineKeyboardButton("Visibilità", callback_data="set_privacy"), InlineKeyboardButton(
-                    "Premio", callback_data="set_gift")],
-                [InlineKeyboardButton(
-                    "Tutorial", url="https://t.me/TakeTheCookie/6")]
-            ]))
-    except:
-        pass
-
-
-def found_admin(id):
-    ad = ini.app.get_chat_members(id, filter="administrators")
+async def found_admin(id):
+    all_admin = await Main.app.get_chat_members(id, filter="administrators")
     admin = []
-    for a in ad:
-        admin.append(int(a.user.id))
+    for x in all_admin:
+        admin.append(int(x.user.id))
     return admin
 
 
-def remove_group(group_id, group_name):
-    value = db.query_db(
-        "SELECT `id_group` FROM `groups` WHERE `id_group` = %s", (group_id,))
-    if value != []:
-        db.modify_db(db.DELETE_QUERY_GROUPS,
-                     (group_id,))
-        ini.app.send_message(
-            group_id, "Ho rimosso questo gruppo dalla lista dei partecipanti! Tutti coloro che avevano raccolto biscotti in questa sessione da questo gruppo sono stati eliminati!")
-        ini.log_message(
-            f"Ho rimosso un nuovo gruppo: {group_name}")
-    else:
-        ini.app.send_message(
-            group_id, "Questo gruppo non risulta nella lista dei partecipanti... L'informazione è errata? Perchè non contatti @GiorgioZa?")
+async def verify_admin(id_admin, id_group):
+    admins = await found_admin(id_group)
+    return True if int(id_admin) in admins else False
 
 
-def add_group(message):
-    query = db.query_db(
-        "SELECT `id_group` FROM `groups` WHERE `id_group` = %s", (message.chat.id,))
-    if query == []:  # se il gruppo non è nel database
-        # chi ha fatto il comando è admin?
-        if verify_admin(message.from_user.id, message.chat.id) == True and str(message.from_user.id) in ini.banned_user:
-            add_group_real(message)
-            ini.app.send_message(
-                message.chat.id, "Gruppo aggiunto! Da adesso può ricevere biscotti in qualsiasi momento... Tenete gli occhi aperti👀")
-        else:  # non admin
-            ini.app.send_message(
-                message.chat.id, "Per usare questo bot, devi aggiungerlo ad un **GRUPPO** in cui tu sei admin!")
-    else:  # gruppo già esistente
-        ini.app.send_message(
-            message.chat.id, "A quanto pare, hai già iscritto questo gruppo ai partecipanti!")
-
-
-def add_group_real(message):
-    chat = ini.app.get_chat(message.chat.id)
-    db.modify_db("INSERT INTO `groups`(`id_group`, `name`) VALUES (%s, %s)",
-                 (message.chat.id, chat.title))  # aggiungi il gruppo al db
-    ini.log_message(
-        f"Ho aggiunto un nuovo gruppo: {chat.title} da parte di: {message.from_user.username if message.from_user.username!=None else message.from_user.firstname}")
-
-
-def remove_error(gruppo):
-    db.modify_db(db.DELETE_QUERY_GROUPS, (gruppo,))
-    ini.log_message(f"Ho elimato questo gruppo {gruppo}")
+async def insert_group_in_db(group_id, user_id):
+    chat = await Main.app.get_chat(group_id)
+    user = await Main.app.get_users(user_id)
     try:
-        ini.app.send_message(
-            gruppo, f"Ho elimato questo gruppo {gruppo} per un errore di sistema, puoi riaggiungerlo usando il comando /add ;)")
+        Db.groups.insert_one({"_id": group_id, "name": chat.title, "n_cookie": 0,
+                             "privacy": 1, "gift": 1, "propic": 0, "date": datetime.now()})  # add the group in the db
+    except pymongo.errors.DuplicateKeyError:
+        return None
     except:
-        pass
+        await Main.log_message(
+            f"Ho avuto un problema ad inserire il gruppo: {chat.title}!")
+        return False
+    await Main.download_group_pic(group_id)
+    user_name = user.username if user.username != None else user.mention()
+    await Main.log_message(
+        f"Ho aggiunto un nuovo gruppo: {chat.title} da parte di: {user_name}!")
+    return True
+
+
+async def add_group(group_id, user_id):
+    # if user is not admin or is banned
+    if not await verify_admin(user_id, group_id) or await User.is_user_banned(user_id):
+        await Main.app.send_message(group_id, "**ERRORE!** Non puoi aggiungere il bot al gruppo! Le motivazioni possono essere le seguenti:\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.")
+        return
+    else:
+        match await insert_group_in_db(group_id, user_id):
+            case True: await Main.app.send_message(group_id, "Gruppo aggiunto correttamente! Iniziate a tenere gli occhi aperti👀, il biscotto è dietro l'angolo😋!")
+            case False: await Main.app.send_message(group_id, "Non sono riuscito ad aggiungere il gruppo🥺! Riprova o contatta @GiorgioZa👌.")
+            case None: await Main.app.send_message(group_id, "A quanto pare, hai già iscritto questo gruppo ai partecipanti!\nL'informazione non è corretta?🧐 Contatta @GiorgioZa👌.")
+
+
+async def remove_group(group_id, user_id):
+    # if user is not admin or is banned
+    if not await verify_admin(user_id, group_id):
+        await Main.app.send_message(group_id, "**ERRORE!** Non puoi rimuovere il bot dal gruppo perchè non sei admin di questo gruppo!")
+        return
+    else:
+        query = await Db.group_query({"_id": group_id}, {"_id": 1}, "_id")
+        if query == None:
+            await Main.app.send_message(group_id, "**ERRORE!** Il gruppo non risulta nel database! Riprova o contatta @GiorgioZa👌.")
+            return
+        else:
+            Db.groups.delete_one({"_id": group_id})
+            await Main.app.send_message(group_id, "Gruppo rimosso correttamente!",
+                                        reply_markup=Main.InlineKeyboardMarkup(
+                                            [
+                                                [Main.InlineKeyboardButton(
+                                                    "Rimuovi dal gruppo!", callback_data="quit_group")],
+                                            ]))
+
+            group = await Main.app.get_chat(group_id)
+            user = await Main.app.get_users(user_id)
+            await Main.log_message(f"Ho rimosso il gruppo {group.title} da parte di {user.mention()}")
+            return
