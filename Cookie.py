@@ -8,13 +8,13 @@ import Db
 async def cookie(group_id):
     Main.remove_scheduler("cookie", 1)  # remove the scheduler
     temp_query = Db.groups.find(
-        {"_id": group_id}, {"_id": 1, "name": 1, "n_cookie": 1})
+        {"_id": int(group_id)}, {"_id": 1, "name": 1, "n_cookie": 1})
     group_info = []
     for x in temp_query:
         group_info.append(x)
     try:  # try to send the cookie
-        bisquit = await Main.app.send_message(group_id, "Oh, ma cosa c'è qui... Un biscotto?!\n\
-            Corri a mangiarlo prima che qualche altro utente te lo rubi!!👀",
+        bisquit = await Main.app.send_message(group_id, "Oh, ma cosa c'è qui... Un biscotto?!\n"\
+            "Corri a mangiarlo prima che qualche altro utente te lo rubi!!👀",
                                               reply_markup=Main.InlineKeyboardMarkup(
                                                   [
                                                       [Main.InlineKeyboardButton(
@@ -33,7 +33,7 @@ async def cookie(group_id):
         await Main.log_message(
             f"non ho inviato il biscotto nel gruppo {group_info[0]['name']} perchè ho avuto un problema")
         Db.groups.delete_one({"_id": group_id})
-        # Main.restart()
+        Main.restart()
         return
     try:
         Main.asyncioscheduler.add_job(expired, 'interval',  hours=1,
@@ -173,11 +173,11 @@ async def victory(user_id, group_id):
     gift_status = await Db.group_query({"_id": group_id}, {"gift": 1}, "gift")
     if gift_status == 1:
        text = f"\
-       🔝Complementi {user.mention}🔝, sei arrivato per primo a quota 30 biscotti🎉🎊.\
-       \nHai vinto il premio messo in palio dal progetto MyFilms che finanzia Take The Cookie.\
-       Per ritirare il premio, contatta in privato @Mario_Myfilms.\
-       \n\nIn bocca al lupo al prossimo vincitore 💯😁\
-       \n***Il vincitore può rifiutare il premio e scegliere il suo destinatario!***"
+       🔝Complementi {user.mention}🔝, sei arrivato per primo a quota 30 biscotti🎉🎊."\
+       "\nHai vinto il premio messo in palio dal progetto MyFilms che finanzia Take The Cookie. "\
+       "Per ritirare il premio, contatta in privato @Mario_Myfilms."\
+       "\n\nIn bocca al lupo al prossimo vincitore 💯😁"\
+       "\n***Il vincitore può rifiutare il premio e scegliere il suo destinatario!***"
     else:
        text = f"🔝Complementi {user.mention}🔝, sei arrivato a quota 30 biscotti e hai vinto questa sessione!🎉🎊"
     text = f"🔝Complementi {user.mention}🔝, sei arrivato a quota 30 biscotti e hai vinto questa sessione!🎉🎊"
@@ -228,12 +228,12 @@ async def alert_win(winner, group):
     all_group = Db.groups.find({"_id": {"$ne": group}}, {"_id": 1})
     for element in all_group:
         await Main.app.send_message(
-            element["_id"], f"La sessione corrente è appena terminata ed ha visto come vincitore {winner}🤩!\
-                I biscotti, però, non hanno tregua e anche durante i festeggiamenti, \
-                continuano ad apparire nei gruppi e a corgliervi di sorpresa. \
-                Per questo motivo dovreste tenere sempre gli occhi aperti👀, \
-                il prossimo biscotto è dietro l'angolo🌚 che aspetta solo di essere divorato😋.\
-                \nGood Luck❤️")
+            element["_id"], f"La sessione corrente è appena terminata ed ha visto come vincitore {winner}🤩! "\
+                "I biscotti, però, non hanno tregua e anche durante i festeggiamenti, "\
+                "continuano ad apparire nei gruppi e a corgliervi di sorpresa. "\
+                "Per questo motivo dovreste tenere sempre gli occhi aperti👀, "\
+                "il prossimo biscotto è dietro l'angolo🌚 che aspetta solo di essere divorato😋."\
+                "\nGood Luck❤️")
 
 
 async def modify_golden_cookie_message(callback_query):
@@ -266,21 +266,21 @@ async def modify_expired_cookie_message(callback_query):
             Db.users.update_one({"_id": callback_query.from_user.id}, {
                                 "$set": {"tot_qta": tot_qta}})
         await Main.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
-                                         f"Oh no🥺! {callback_query.from_user.mention} ha mangiato un biscotto avariato 🤢.\n\
-                                    Press F to pay respect 🙏.")
+                                         f"Oh no🥺! {callback_query.from_user.mention} ha mangiato un biscotto avariato 🤢.\n"\
+                                          "Press F to pay respect 🙏.")
         await callback_query.answer(
-            f"Che peccato. Questo biscotto ha atteso per troppo tempo che qualcuno lo mangiasse ed è avariato🥺🤢... \
-            Sei stato avvelenato, hai vomitato e hai perso un biscotto!😵‍💫", show_alert=True)
+            f"Che peccato. Questo biscotto ha atteso per troppo tempo che qualcuno lo mangiasse ed è avariato🥺🤢... "\
+            "Sei stato avvelenato, hai vomitato e hai perso un biscotto!😵‍💫", show_alert=True)
         await Main.log_message(
             f"Biscotto avariato del gruppo: {callback_query.message.chat.title} riscattato da: @{callback_query.from_user.username if callback_query.from_user.username!=None else callback_query.from_user.first_name}")
     else:
         qta = await Db.cookie_query({"_id": callback_query.message.message_id}, {"value": 1}, "value")
         await cookie_stuff_after_taken(callback_query, qta, session_qta, general_qta)
         await Main.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
-                                         f"Che fortuna!🍀 {callback_query.from_user.mention} ha mangiato un biscotto avariato senza subire conseguenze.\n\
-                Che utente fortunato😮‍💨.")
+                                         f"Che fortuna!🍀 {callback_query.from_user.mention} ha mangiato un biscotto avariato senza subire conseguenze.\n"\
+                                        "Che utente fortunato😮‍💨.")
         await callback_query.answer(
-            f"WOW😳, caro {callback_query.from_user.first_name} che fortuna! \
-                Hai divorato il biscotto avariato senza conseguenze!", show_alert=True)
+            f"WOW😳, caro {callback_query.from_user.first_name} che fortuna! "\
+                "Hai divorato il biscotto avariato senza conseguenze!", show_alert=True)
         await Main.log_message(
             f"Biscotto del gruppo: {callback_query.message.chat.title} riscattato da: {callback_query.from_user.username if callback_query.from_user.username!=None else callback_query.from_user.first_name}")

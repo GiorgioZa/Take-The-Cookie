@@ -47,17 +47,25 @@ async def my_stats(user_id, chat_id, message_id, callback_query):
     user_other_stats = []
     for element in user_other_stats_temp:
         user_other_stats.append(element)
+
+    if user_other_stats == []:
+        await Main.app.send_message(chat_id, "Utente non trovato!",reply_markup=Main.InlineKeyboardMarkup(
+                                          [
+                                              [Main.InlineKeyboardButton(
+                                                  "Aggiorna!", callback_data="update", user_id=user_id)],
+                                          ]))
+        return
     text += f"\
-    - id: __{user_other_stats[0]['_id']}__\
-    \n- username: __{user_other_stats[0]['username']}__\
-    \n- biscotti in sessione: {'0' if cookie_session_qta == None else cookie_session_qta}\
-    \n- biscotti complessivi: {'0' if user_other_stats[0]['tot_qta'] == None else user_other_stats[0]['tot_qta']}\
-    \n- n° sessioni vinte:    {'0' if user_other_stats[0]['session_count'] == None else user_other_stats[0]['session_count']}"
+    - id: __{user_other_stats[0]['_id']}__"\
+    "\n- username: __{user_other_stats[0]['username']}__"\
+    "\n- biscotti in sessione: {'0' if cookie_session_qta == None else cookie_session_qta}"\
+    "\n- biscotti complessivi: {'0' if user_other_stats[0]['tot_qta'] == None else user_other_stats[0]['tot_qta']}"\
+    "\n- n° sessioni vinte:    {'0' if user_other_stats[0]['session_count'] == None else user_other_stats[0]['session_count']}"
     match user_other_stats[0]["propic"]:
         case 0:
-            propic = "C:/Users/Gioza/Documents/informatica/python/biscotto v2/biscotto v3 beta/static/img/default.png"
+            propic = "static/img/users/user_default.png"
         case 1:
-            propic = f"C:/Users/Gioza/Documents/informatica/python/biscotto v2/biscotto v3 beta/static/img/{user_other_stats[0]['_id']}.png"
+            propic = f"static/img/users/{user_other_stats[0]['_id']}.png"
     match message_id:
         case None:
             await Main.app.send_photo(chat_id,
@@ -92,15 +100,15 @@ async def ban_status(chat_id, user_id, update_message_id, callback_query):
     match update_message_id:
         case None:
             match await is_user_banned(user_id):
-                case True: await Main.app.send_message(chat_id, f"📛 {user.mention()} è **BANNATO**!📛\n\
-                    📯Non potrà raccogliere biscotti e/o aggiungere nuovi gruppi!",
+                case True: await Main.app.send_message(chat_id, f"📛 {user.mention()} è **BANNATO**!📛\n"\
+                    "📯Non potrà raccogliere biscotti e/o aggiungere nuovi gruppi!",
                                                        reply_markup=Main.InlineKeyboardMarkup(
                                                            [
                                                                [Main.InlineKeyboardButton(
                                                                    "Update", callback_data="update_ban")]
                                                            ]))
-                case False: await Main.app.send_message(chat_id, f"✅ {user.mention()} è **LIBERO**!✅\n\
-                    📯Può continuare a raccogliere biscotti e/o aggiungere nuovi gruppi!",
+                case False: await Main.app.send_message(chat_id, f"✅ {user.mention()} è **LIBERO**!✅\n"\
+                    "📯Può continuare a raccogliere biscotti e/o aggiungere nuovi gruppi!",
                                                         reply_markup=Main.InlineKeyboardMarkup(
                                                             [
                                                                 [Main.InlineKeyboardButton(
@@ -110,8 +118,8 @@ async def ban_status(chat_id, user_id, update_message_id, callback_query):
             match await is_user_banned(user_id):
                 case True:
                     try:
-                        await Main.app.edit_message_text(chat_id, update_message_id, f"📛 {user.mention()} è **BANNATO**!📛\n\
-                            📯Non potrà raccogliere biscotti e/o aggiungere nuovi gruppi!",
+                        await Main.app.edit_message_text(chat_id, update_message_id, f"📛 {user.mention()} è **BANNATO**!📛\n"\
+                            "📯Non potrà raccogliere biscotti e/o aggiungere nuovi gruppi!",
                                                          reply_markup=Main.InlineKeyboardMarkup(
                                                              [
                                                                  [Main.InlineKeyboardButton(
@@ -123,8 +131,8 @@ async def ban_status(chat_id, user_id, update_message_id, callback_query):
 
                 case False:
                     try:
-                        await Main.app.edit_message_text(chat_id, update_message_id, f"✅ {user.mention()} è **LIBERO**!✅\n\
-                            📯Può continuare a raccogliere biscotti e/o aggiungere nuovi gruppi!",
+                        await Main.app.edit_message_text(chat_id, update_message_id, f"✅ {user.mention()} è **LIBERO**!✅\n"\
+                            "📯Può continuare a raccogliere biscotti e/o aggiungere nuovi gruppi!",
                                                          reply_markup=Main.InlineKeyboardMarkup(
                                                              [
                                                                  [Main.InlineKeyboardButton(
@@ -136,8 +144,8 @@ async def ban_status(chat_id, user_id, update_message_id, callback_query):
 
 
 async def give_cookie(chat_id, command_message_id, sender, receiver, qta):
-    error1 = "Quali biscotti pensavi di donare? Non ne possiedi abbastanza 😆.\
-        Cerca di riscattarne il più possibile per permetterti donazioni così cospique!"
+    error1 = "Quali biscotti pensavi di donare? Non ne possiedi abbastanza 😆."\
+        "Cerca di riscattarne il più possibile per permetterti donazioni così cospique!"
     if await User.is_user_banned(receiver.id):
         await Main.app.send_message(chat_id, f"Non puoi donare biscotti ad una persona bannata 😵‍💫!", reply_to_message_id=command_message_id)
         return
@@ -162,8 +170,8 @@ async def give_cookie(chat_id, command_message_id, sender, receiver, qta):
     Cookie.update_cookie_quantity(
         query_receiver_global, query_receiver_session, qta, chat_id, receiver)
     await Main.app.send_message(chat_id,
-                                f"✅Donazione Effettuata!✅\nFai sapere a {receiver.mention} della tua generosità sfruttando il bottone\
-         sotto questo messaggio🥳.",
+                                f"✅Donazione Effettuata!✅\nFai sapere a {receiver.mention} della tua generosità sfruttando il bottone "\
+         "sotto questo messaggio🥳.",
                                 reply_to_message_id=command_message_id, reply_markup=Main.InlineKeyboardMarkup(
                                     [
                                         [Main.InlineKeyboardButton(

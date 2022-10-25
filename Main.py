@@ -91,7 +91,6 @@ def start_scheduler():
 
 
 def time_scheduler():
-    print(datetime.now())
     if (datetime.now().hour > 0 and datetime.now().hour < 23) and ((datetime.now().minute > 0 and datetime.now().minute < 50)):
         try:
             asyncioscheduler.add_job(Bet.remove, 'cron', hour='0', args=(
@@ -114,8 +113,6 @@ async def download_propic(user):
     user_id = user.from_user.id
     try:
         await test_download_propic(user, user_id)
-        Db.users.update_one({"_id": user_id}, {
-            "$set": {"propic": 1}})
     except:
         return
 
@@ -124,8 +121,12 @@ async def test_download_propic(user, user_id):
     try:
         await app.download_media(user.from_user.photo.big_file_id,
                                  f"static/img/users/{user_id}.png")
+        Db.users.update_one({"_id": user_id}, {
+            "$set": {"propic": 1}})
         return True
     except:
+        Db.users.update_one({"_id": user_id}, {
+            "$set": {"propic": 0}})
         return False
 
 
@@ -134,8 +135,6 @@ async def download_group_pic(group_id):
     a = None
     try:
         a = await test_download_group_pic(group, group_id)
-        Db.groups.update_one({"_id": group_id}, {
-            "$set": {"propic": 1}})
     except:
         return a
 
@@ -144,8 +143,12 @@ async def test_download_group_pic(group, group_id):
     try:
         await app.download_media(group.photo.big_file_id,
                                  f"static/img/groups/{group_id}.png")
+        Db.groups.update_one({"_id": group_id}, {
+            "$set": {"propic": 1}})
         return True
     except:
+        Db.groups.update_one({"_id": group_id}, {
+            "$set": {"propic": 0}})
         return False
 
 
@@ -181,16 +184,16 @@ async def find_group(groups):
         elif choice < 15 + 30 + 35:  # 35
             flag = True  # big group
             if group_members >= 150 and group_members < 500:  # da 150 a 499
-                selected.append(groups["_id"])
+                selected.append(group["_id"])
                 continue
         elif choice <= 15 + 30 + 35 + 20:  # (20%)
             flag = True  # big group
             if group_members >= 500:  # 500+
-                selected.append(groups["_id"])
+                selected.append(group["_id"])
                 continue
     if len(selected) >= 2:
         random.shuffle(selected)
-        text = "La scelta ricade tra questi gruppi:\n"
+        text = f"Il numero randomico è: {choice}. La scelta ricade tra questi gruppi:\n"
         for element in selected:
             name = await app.get_chat(element)
             text += f"- {name.title}\n"
@@ -234,14 +237,15 @@ async def verify_group():
             query = Db.cookies.find({}).limit(3)
 
     for element in query:
-        if int(group_id) == int(element['id']):
+        if int(group_id) == int(element['group_id']):
             await log_message("Gruppo scelto uguale al precedente!")
             await select_group()
             return
         else:
-            group_name = await app.get_chat(group_id)
-            await log_message(
-                f"Il prossimo gruppo in cui verrà inviato il biscotto è: {group_name.title}")
+            break
+    group_name = await app.get_chat(group_id)
+    await log_message(
+        f"Il prossimo gruppo in cui verrà inviato il biscotto è: {group_name.title}")
 
 
 async def delete_message(chat_id, message_id):
@@ -262,8 +266,9 @@ async def private_add(client, message):
 @app.on_message((filters.group) & filters.command("add"))
 async def add(client, message):
     if not await delete_message(message.chat.id, message.message_id):
-        await app.send_message(message.chat.id, "Prima di avviare la raccolta dei biscotti devi aggiungermi come amministratore\
-             impostando come privilegio la rimozione dei messaggi!")
+        await app.send_message(message.chat.id, 
+            "Prima di avviare la raccolta dei biscotti devi aggiungermi come amministratore "\
+            "impostando come privilegio la rimozione dei messaggi!")
         return
     await Group.add_group(message.chat.id, message.from_user.id)
 
@@ -282,7 +287,7 @@ async def private_quit(client, message):
 
 @app.on_callback_query(filters.regex("quit_group"))
 async def quit_group(client, callback_query):
-    if not await Group.verify_admin(callback_query.from_user.id, callback_query.chat.id) or await User.is_user_banned(callback_query.from_user.id):
+    if not await Group.verify_admin(callback_query.from_user.id, callback_query.message.chat.id) or await User.is_user_banned(callback_query.from_user.id):
         await callback_query.answer("Non puoi usare questa funzione! Non sei admin oppure scopri se sei stato bannato usando il comando /im_banned !")
     else:
         await app.leave_chat(callback_query.message.chat.id)
@@ -299,7 +304,9 @@ async def show_leaderboard(client, message):
 async def start_bet(client, message):
     await delete_message(message.chat.id, message.message_id)
     if not await Group.verify_admin(message.from_user.id, message.chat.id) or await User.is_user_banned(message.from_user.id):
-        await app.send_message(message.chat.id, "**ERRORE!** Non puoi avviare le scommesse! Le motivazioni possono essere le seguenti:\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.")
+        await app.send_message(message.chat.id, 
+            "**ERRORE!** Non puoi avviare le scommesse! Le motivazioni possono essere le seguenti:"\
+            "\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.")
         return
     await Bet.start_bet(message)
 
@@ -371,7 +378,7 @@ async def def_new_group(client, message):
         await app.send_message(message.chat.id, "Identificativo del gruppo errato")
         return
 
-    query = Db.group_query({"_id": text[0]}, {"_id": 1}, "_id")
+    query = await Db.group_query({"_id": int(text[0])}, {"_id": 1}, "_id")
     if query == None:
         await app.send_message(message.chat.id, "Gruppo non trovato all'interno del database")
     else:
@@ -404,13 +411,15 @@ async def modify_user(client, message):
 
 @app.on_callback_query(filters.regex("update_group_stat"))
 async def modify_group_info(client, callback_query):
-    await Group.group_info(callback_query.message.chat.title, callback_query.message.chat.id, callback_query.message.message_id)
+    await Group.group_info(callback_query.message.chat.title, callback_query.message.chat.id, callback_query)
 
 
 @app.on_callback_query(filters.regex("set_privacy"))
 async def set_privacy(client, callback_query):
     if not await Group.verify_admin(callback_query.from_user.id, callback_query.message.chat.id) or await User.is_user_banned(callback_query.from_user.id):
-        await callback_query.answer(group_id, "**ERRORE!** Non puoi modificare queste impostazioni! Le motivazioni possono essere le seguenti:\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.")
+        await callback_query.answer(
+            "**ERRORE!** Non puoi modificare queste impostazioni! Le motivazioni possono essere le seguenti:"\
+            "\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.")
     else:
         await Commands.change_privacy_property(
             callback_query.message.chat.id, callback_query.message.chat.title, callback_query.message.message_id)
@@ -419,7 +428,8 @@ async def set_privacy(client, callback_query):
 @app.on_callback_query(filters.regex("set_gift"))
 async def det_gift(client, callback_query):
     if not await Group.verify_admin(callback_query.from_user.id, callback_query.message.chat.id) or await User.is_user_banned(callback_query.from_user.id):
-        await callback_query.answer(group_id, "**ERRORE!** Non puoi modificare queste impostazioni! Le motivazioni possono essere le seguenti:\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.")
+        await callback_query.answer("**ERRORE!** Non puoi modificare queste impostazioni! Le motivazioni possono essere le seguenti:"\
+            "\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.")
     else:
         await Commands.change_gifts_property(
             callback_query.message.chat.id, callback_query.message.chat.title, callback_query.message.message_id)
@@ -427,9 +437,9 @@ async def det_gift(client, callback_query):
 
 @app.on_message(filters.command("dev"))
 async def dev_info(client, message):
-    await app.send_message(message.chat.id, f"Versione biscotti: 2.5\
-                                            \nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️\
-                                            \nUltime info sul bot -> canale ufficiale (https://t.me/TakeTheCookie)")
+    await app.send_message(message.chat.id, f"Versione biscotti: 2.5"\
+                                            "\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️."\
+                                            "\nUltime info sul bot -> canale ufficiale (https://t.me/TakeTheCookie)")
 
 
 # /im_banned, this show your status about ban
@@ -444,8 +454,8 @@ async def actually_bet(client, message):
     await delete_message(message.chat.id, message.message_id)
     if message.via_bot is None or message.via_bot.id != 1916037778:
         await app.send_message(message.chat.id,
-                               "Puoi usare questo comando solo in inline mode.\
-        \nAvvia una scommessa o usa i bottoni per scommettere correttamente!")
+                               "Puoi usare questo comando solo in inline mode."\
+                                "\nAvvia una scommessa o usa i bottoni per scommettere correttamente!")
         return
     await Bet.focus_on(message)
 
@@ -457,9 +467,9 @@ async def give_cookie(client, message):
         await app.send_message(
             message.chat.id, "Non puoi donare biscotti😵‍💫! Scopri se sei stato bannato usando il comando /im_banned !")
         return
-    error = "Sintassi non corretta!\
-            \nUsa: /give <__username utente a cui inviare__> <__quantità da inviare maggiore di zero__>\
-            \nEsempio: /give @GiorgioZa 4"
+    error = "Sintassi non corretta!"\
+            "\nUsa: /give <__username utente a cui inviare__> <__quantità da inviare maggiore di zero__>"\
+            "\nEsempio: /give @GiorgioZa 4"
     command = message.text
     command = command.split(" ")
     command.pop(0)
@@ -530,8 +540,8 @@ async def donation_bill(inline_query):
                 InlineQueryResultArticle(
                     title="Non puoi scommettere!",
                     input_message_content=InputTextMessageContent(
-                        f"A quanto pare, mio caro {inline_query.from_user.mention}, risulti nella ban list!\
-                        \nScopri se sei stato bannato usando il comando /im_banned !"
+                        f"A quanto pare, mio caro {inline_query.from_user.mention}, risulti nella ban list!"\
+                        "\nScopri se sei stato bannato usando il comando /im_banned !"
                     )
                 )
             ],
@@ -547,7 +557,8 @@ async def donation_bill(inline_query):
                     InlineQueryResultArticle(
                         title="Ricevuta Donazione",
                         input_message_content=InputTextMessageContent(
-                            f"Ciao!\nTi ho appena donato {split[1]} {'biscotto' if int(split[1])==1 else 'biscotti'}😋! Inizia anche tu la raccolta dei biscotti con @TakeTheCookieBot !"
+                            f"Ciao!\nTi ho appena donato {split[1]} {'biscotto' if int(split[1])==1 else 'biscotti'}😋! "\
+                                "Inizia anche tu la raccolta dei biscotti con @TakeTheCookieBot !"
                         ),
                         description="Invia la ricevuta di donazione all'utente.",
                         reply_markup=InlineKeyboardMarkup(
@@ -579,8 +590,8 @@ async def bet(client, inline_query):
                 InlineQueryResultArticle(
                     title="Non puoi scommettere!",
                     input_message_content=InputTextMessageContent(
-                        f"A quanto pare, mio caro {inline_query.from_user.mention}, risulti nella ban list!\
-                        \nScopri se sei stato bannato usando il comando /im_banned !"
+                        f"A quanto pare, mio caro {inline_query.from_user.mention}, risulti nella ban list!"\
+                        "\nScopri se sei stato bannato usando il comando /im_banned !"
                     )
                 )
             ],
@@ -593,8 +604,8 @@ async def bet(client, inline_query):
                 InlineQueryResultArticle(
                     title="Non puoi scommettere!",
                     input_message_content=InputTextMessageContent(
-                        f"A quanto pare, mio caro {inline_query.from_user.mention}, la scommessa in questo gruppo è scaduta!\
-                        \nRicordati che una volta avviata, la scommessa accetta puntate per 1h!"
+                        f"A quanto pare, mio caro {inline_query.from_user.mention}, la scommessa in questo gruppo è scaduta!"\
+                        "\nRicordati che una volta avviata, la scommessa accetta puntate per 1h!"
                     )
                 )
             ],
@@ -611,8 +622,8 @@ async def bet(client, inline_query):
                         InlineQueryResultArticle(
                             title="Non puoi scommettere!",
                             input_message_content=InputTextMessageContent(
-                                f"A quanto pare, mio caro {inline_query.from_user.mention}, non hai abbastanza biscotti!\
-                            \Per poter scommettere è necessario che tu abbia almeno un biscotto!"
+                            f"A quanto pare, mio caro {inline_query.from_user.mention}, non hai abbastanza biscotti!"\
+                            "Per poter scommettere è necessario che tu abbia almeno un biscotto!"
                             )
                         )
                     ],
@@ -642,7 +653,8 @@ async def bet(client, inline_query):
                             InlineQueryResultArticle(
                                 title=f"Non puoi scommettere!",
                                 input_message_content=InputTextMessageContent(
-                                    f"Hai già scommesso, se vuoi modificare la scommessa o annullarla, fai riferimento a questo messaggio: https://t.me/c/{int(group_id[1])}/{bets['bet_message']}"
+                                    f"Hai già scommesso, se vuoi modificare la scommessa o annullarla, "\
+                                     "fai riferimento a questo messaggio: https://t.me/c/{int(group_id[1])}/{bets['bet_message']}"
                                 )
                             )
                         )
@@ -678,8 +690,8 @@ async def bet(client, inline_query):
                     InlineQueryResultArticle(
                         title="Non puoi scommettere!",
                         input_message_content=InputTextMessageContent(
-                            f"A quanto pare, mio caro {inline_query.from_user.mention}, non esiste alcuna scommessa per questo gruppo!\
-                            \nAssicurati di non modificare niente durante le puntate o di verificare che il gruppo abbia avviato la scommessa!"
+                            f"A quanto pare, mio caro {inline_query.from_user.mention}, non esiste alcuna scommessa per questo gruppo!"\
+                            "\nAssicurati di non modificare niente durante le puntate o di verificare che il gruppo abbia avviato la scommessa!"
                         )
                     )
                 ],
@@ -728,8 +740,8 @@ async def change_bet_qta(client, callback_query):
         await callback_query.answer("Non hai fatto tu questa scommessa.")
         return
     await app.edit_message_text(int(split[0]), user_db_info["bet_message"],
-                                f"{callback_query.from_user.mention} ha scommesso {user_db_info['qta']} biscotti sul '{'SI' if split[1] == 'yes' else 'NO'}'!\
-            \nSe vuoi cambiare puntata o eliminarla del tutto, usa le impostazioni allegate al messagio!",
+                                f"{callback_query.from_user.mention} ha scommesso {user_db_info['qta']} biscotti sul '{'SI' if split[1] == 'yes' else 'NO'}'!"\
+            "\nSe vuoi cambiare puntata o eliminarla del tutto, usa le impostazioni allegate al messagio!",
                                 reply_markup=InlineKeyboardMarkup([
                                     [InlineKeyboardButton(
                                         "❗️Elimina puntata❗️", callback_data=f"delete_user_bet;{split[0]};{split[1]}")],
