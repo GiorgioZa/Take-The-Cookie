@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.route('/')
 @app.route('/index')
-async def index():
+def index():
     x = 0
     users =[]
     temp = Db.session.aggregate([

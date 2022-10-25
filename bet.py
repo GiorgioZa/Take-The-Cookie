@@ -16,8 +16,8 @@ async def start_bet(message_entity):
         # group doesn't start the bet
         if await Db.bet_query({"_id": message_entity.chat.id}, {"_id": 1}, "_id") is None:
             message = await Main.app.send_message(message_entity.chat.id,
-                                                  "💸Nuova scommessa avviata!💯\
-                \nQuesto gruppo riceverà almeno un biscotto entro mezzanotte?",
+                                                  "💸Nuova scommessa avviata!💯"\
+                "\nQuesto gruppo riceverà almeno un biscotto entro mezzanotte?",
                                                   reply_markup=Main.InlineKeyboardMarkup(
                                                       [
                                                           [Main.InlineKeyboardButton(
@@ -97,8 +97,8 @@ async def focus_on(message):
     command = command.split(" ")
     command.pop(0)
     bet_bill = await Main.app.send_message(message.chat.id,
-                                           f"{message.from_user.mention} ha scommesso {command[1]} biscotti sul '{'SI' if command[2] == 'yes' else 'NO'}'!\
-            \nSe vuoi cambiare puntata o eliminarla del tutto, usa le impostazioni allegate al messagio!",
+                                           f"{message.from_user.mention} ha scommesso {command[1]} biscotti sul '{'SI' if command[2] == 'yes' else 'NO'}'!"\
+            "\nSe vuoi cambiare puntata o eliminarla del tutto, usa le impostazioni allegate al messagio!",
                                            reply_markup=Main.InlineKeyboardMarkup([
                                                [Main.InlineKeyboardButton(
                                                    "❗️Elimina puntata❗️", callback_data=f"delete_user_bet;{command[0]};{command[2]}")],
@@ -192,7 +192,8 @@ async def remove_single_group(group_id, flag):
             flag = True
         case _:  # result is no
             users = await Db.bet_query_sorted({"_id": group_id}, {"no_users": 1}, "no_users", "qta", -1)
-    text = f"Scommessa terminata!\nIl risultato di questo gruppo è **{'SI, il biscotto è arrivato' if flag else 'NO, nessun biscotto.'}**.\nI vincitori, con la corrispettiva vincita, sono i seguenti:\n"
+    text = f"Scommessa terminata!\nIl risultato di questo gruppo è **{'SI, il biscotto è arrivato' if flag else 'NO, nessun biscotto.'}**."\
+            "\nI vincitori, con la corrispettiva vincita, sono i seguenti:\n"
     if users == None or users == []:
         text += "**NESSUN VINCITORE**"
     else:
@@ -215,7 +216,8 @@ async def remove_all_group():
                 flag = True
             case _:  # result is no
                 users = await Db.bet_query_sorted({"_id": element["_id"]}, {"no_users": 1}, "no_users", "qta", -1)
-        text = f"Scommessa terminata!\nIl risultato di questo gruppo è **{'SI, il biscotto è arrivato' if flag else 'NO, nessun biscotto.'}**.\nI vincitori, con la corrispettiva vincita, sono i seguenti:\n"
+        text = f"Scommessa terminata!\nIl risultato di questo gruppo è **{'SI, il biscotto è arrivato' if flag else 'NO, nessun biscotto.'}**."\
+                "\nI vincitori, con la corrispettiva vincita, sono i seguenti:\n"
         for element_u in users:
             username = await Db.user_query({"_id": element_u["_id"]}, {"username": 1}, "username")
             await Cookie.add_cookie_complete(element_u["_id"], int(element_u["qta"])*2)

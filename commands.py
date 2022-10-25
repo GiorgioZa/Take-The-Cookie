@@ -27,25 +27,27 @@ async def send_groups_list(chat_id):
 
 
 async def private_welcome(chat_id):
-    await Main.app.send_message(chat_id, "Ciao, grazie per aver avviato @TakeTheCookie.\
-                                        \nQuesto bot è nato per rendere divertente l'atmosfera all'interno dei gruppi. Una volta aggiunto il bot al gruppo, lui manderà biscotti ad intervalli randomici. Il vostro compito è collezionarne il più possibile per poter vincere la sessione!\
-                                        \nIn bocca al lupo!")
+    await Main.app.send_message(chat_id, "Ciao, grazie per aver avviato @TakeTheCookie."\
+                                        "\nQuesto bot è nato per rendere divertente l'atmosfera all'interno dei gruppi. "\
+                                        "Una volta aggiunto il bot al gruppo, lui manderà biscotti ad intervalli randomici. "\
+                                        "Il vostro compito è collezionarne il più possibile per poter vincere la sessione!"\
+                                        "\nIn bocca al lupo!")
     await Main.app.send_message(chat_id, "Se vuoi giocare con il bot devi aggiungerlo ad un gruppo.")
 
 
 async def private_quit(chat_id):
-    await Main.app.send_message(chat_id, "Mi dispiace, questo comando può essere usato solamente all'interno dei gruppi!\
-                                        \n\nAggiungimi ad un gruppo!")
+    await Main.app.send_message(chat_id, "Mi dispiace, questo comando può essere usato solamente all'interno dei gruppi!"\
+                                        "\n\nAggiungimi ad un gruppo!")
 
 
 async def private_bet(chat_id):
-    await Main.app.send_message(chat_id, "Puoi scommettere solo all'interno dei gruppi!\
-                                        \nAggiungimi ad un gruppo per poter scommettere!")
+    await Main.app.send_message(chat_id, "Puoi scommettere solo all'interno dei gruppi!"\
+                                        "\nAggiungimi ad un gruppo per poter scommettere!")
 
 
 async def private_group_info(chat_id):
-    await Main.app.send_message(chat_id, "Non posso mostrarti le statistiche del gruppo in questa chat!\
-                                        \nAggiungimi ad un gruppo per poter visualizzare le stue statistiche!")
+    await Main.app.send_message(chat_id, "Non posso mostrarti le statistiche del gruppo in questa chat!"\
+                                        "\nAggiungimi ad un gruppo per poter visualizzare le stue statistiche!")
 
 
 async def show_leaderboard(chat_id, message_id, flag, flag_edit):
