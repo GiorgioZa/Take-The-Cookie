@@ -83,8 +83,8 @@ def start_scheduler():
     bets = Db.bet.find({"closed": 0})
     for element in bets:
         try:
-            asyncioscheduler.add_job(Bet.remove, 'interval', minutes=10,
-                                     args=(element["_id"], False), id=f'remove{element["_id"]}')
+            asyncioscheduler.add_job(Bet.close_bet, 'interval', minutes=10,
+                                     args=(element["_id"], element["bet_message"]), id=f'bet{element["_id"]}')
         except:
             return
     time_scheduler()
@@ -169,7 +169,7 @@ async def find_group(groups):
         try:
             group_members = await app.get_chat_members_count(group["_id"])
         except (errors.ChannelInvalid, errors.ChannelPrivate, errors.PeerIdInvalid):
-            await remove_error(groups[0])
+            await remove_error(group["_id"])
             continue
         if choice < 15:  # 15%
             flag = False  # small group
@@ -288,7 +288,7 @@ async def private_quit(client, message):
 @app.on_callback_query(filters.regex("quit_group"))
 async def quit_group(client, callback_query):
     if not await Group.verify_admin(callback_query.from_user.id, callback_query.message.chat.id) or await User.is_user_banned(callback_query.from_user.id):
-        await callback_query.answer("Non puoi usare questa funzione! Non sei admin oppure scopri se sei stato bannato usando il comando /im_banned !")
+        await callback_query.answer("Non puoi usare questa funzione! Non sei admin oppure scopri se sei stato bannato usando il comando /im_banned !", show_alert=True)
     else:
         await app.leave_chat(callback_query.message.chat.id)
         await log_message(f"Sono uscito dal gruppo {callback_query.message.chat.title}")
@@ -419,7 +419,7 @@ async def set_privacy(client, callback_query):
     if not await Group.verify_admin(callback_query.from_user.id, callback_query.message.chat.id) or await User.is_user_banned(callback_query.from_user.id):
         await callback_query.answer(
             "**ERRORE!** Non puoi modificare queste impostazioni! Le motivazioni possono essere le seguenti:"\
-            "\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.")
+            "\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.", show_alert=True)
     else:
         await Commands.change_privacy_property(
             callback_query.message.chat.id, callback_query.message.chat.title, callback_query.message.message_id)
@@ -429,7 +429,7 @@ async def set_privacy(client, callback_query):
 async def det_gift(client, callback_query):
     if not await Group.verify_admin(callback_query.from_user.id, callback_query.message.chat.id) or await User.is_user_banned(callback_query.from_user.id):
         await callback_query.answer("**ERRORE!** Non puoi modificare queste impostazioni! Le motivazioni possono essere le seguenti:"\
-            "\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.")
+            "\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.", show_alert=True)
     else:
         await Commands.change_gifts_property(
             callback_query.message.chat.id, callback_query.message.chat.title, callback_query.message.message_id)
@@ -437,7 +437,7 @@ async def det_gift(client, callback_query):
 
 @app.on_message(filters.command("dev"))
 async def dev_info(client, message):
-    await app.send_message(message.chat.id, f"Versione biscotti: 2.5"\
+    await app.send_message(message.chat.id, f"Versione biscotti: 2.5.2"\
                                             "\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️."\
                                             "\nUltime info sul bot -> canale ufficiale (https://t.me/TakeTheCookie)")
 
@@ -452,7 +452,8 @@ async def is_banned(client, message):
 @app.on_message(filters.command("bet_active"))
 async def actually_bet(client, message):
     await delete_message(message.chat.id, message.message_id)
-    if message.via_bot is None or message.via_bot.id != 1916037778:
+    #1916037778 when u play dev mode
+    if message.via_bot is None or message.via_bot.id != 5084314234: #5084314234 when u play take the cookie original
         await app.send_message(message.chat.id,
                                "Puoi usare questo comando solo in inline mode."\
                                 "\nAvvia una scommessa o usa i bottoni per scommettere correttamente!")
@@ -519,7 +520,7 @@ async def global_stats(client, callback_query):
 async def taken_cookie(client, callback_query):
     if await User.is_user_banned(callback_query.from_user.id):
         await callback_query.answer(
-            "Non puoi riscattare questo biscotto😵‍💫! Scopri se sei stato bannato usando il comando /im_banned !")
+            "Non puoi riscattare questo biscotto😵‍💫! Scopri se sei stato bannato usando il comando /im_banned !", show_alert=True)
         return
     await Cookie.take(callback_query)
 
@@ -528,7 +529,7 @@ async def taken_cookie(client, callback_query):
 async def take_expired_cookie(client, callback_query):
     if await User.is_user_banned(callback_query.from_user.id):
         await callback_query.answer(
-            "Non puoi riscattare questo biscotto😵‍💫! Scopri se sei stato bannato usando il comando /im_banned !")
+            "Non puoi riscattare questo biscotto😵‍💫! Scopri se sei stato bannato usando il comando /im_banned !", show_alert=True)
         return
     await Cookie.take(callback_query)
 
@@ -654,7 +655,7 @@ async def bet(client, inline_query):
                                 title=f"Non puoi scommettere!",
                                 input_message_content=InputTextMessageContent(
                                     f"Hai già scommesso, se vuoi modificare la scommessa o annullarla, "\
-                                     "fai riferimento a questo messaggio: https://t.me/c/{int(group_id[1])}/{bets['bet_message']}"
+                                     f"fai riferimento a questo messaggio: https://t.me/c/{int(group_id[1])}/{bets['bet_message']}"
                                 )
                             )
                         )
@@ -704,22 +705,22 @@ async def delete_bet(client, callback_query):
     split = callback_query.data.split(";")
     split.pop(0)
     if await Bet.is_closed(int(split[0])):
-        await callback_query.answer("Le scommesse sono chiuse, non puoi ritirare la tua puntata!")
+        await callback_query.answer("Le scommesse sono chiuse, non puoi ritirare la tua puntata!", show_alert=True)
         return
     match split[1]:
         case "yes":
             if await Bet.delete_user_from_bet(int(split[0]), callback_query.from_user.id, "yes_users"):
-                await callback_query.answer("Scommessa rimossa con successo")
+                await callback_query.answer("Scommessa rimossa con successo", show_alert=True)
                 await delete_message(split[0], callback_query.message.message_id)
             else:
-                await callback_query.answer("Non ci sono scommesse a tuo nome sul 'SI' in questo gruppo!")
+                await callback_query.answer("Non ci sono scommesse a tuo nome sul 'SI' in questo gruppo!", show_alert=True)
 
         case "no":
             if await Bet.delete_user_from_bet(int(split[0]), callback_query.from_user.id, "no_users"):
-                await callback_query.answer("Scommessa rimossa con successo")
+                await callback_query.answer("Scommessa rimossa con successo", show_alert=True)
                 await delete_message(split[0], callback_query.message.message_id)
             else:
-                await callback_query.answer("Non ci sono scommesse a tuo nome sul 'NO' in questo gruppo!")
+                await callback_query.answer("Non ci sono scommesse a tuo nome sul 'NO' in questo gruppo!", show_alert=True)
 
 
 @app.on_callback_query(filters.regex("^change_bet\;\-\d+\;\w+$"))
@@ -727,7 +728,7 @@ async def change_bet_qta(client, callback_query):
     split = callback_query.data.split(";")
     split.pop(0)
     if await Bet.is_closed(int(split[0])):
-        await callback_query.answer("Le scommesse sono chiuse, non puoi modificare la tua puntata!")
+        await callback_query.answer("Le scommesse sono chiuse, non puoi modificare la tua puntata!", show_alert=True)
         return
     match split[1]:
         case "yes":
@@ -737,7 +738,7 @@ async def change_bet_qta(client, callback_query):
             split[1] = "yes"
             user_db_info = await Bet.change_user_bet(int(split[0]), callback_query.from_user.id, "no_users")
     if user_db_info == None:
-        await callback_query.answer("Non hai fatto tu questa scommessa.")
+        await callback_query.answer("Non hai fatto tu questa scommessa.", show_alert=True)
         return
     await app.edit_message_text(int(split[0]), user_db_info["bet_message"],
                                 f"{callback_query.from_user.mention} ha scommesso {user_db_info['qta']} biscotti sul '{'SI' if split[1] == 'yes' else 'NO'}'!"\
@@ -757,7 +758,7 @@ async def confirm_bet(client, callback_query):
     split = callback_query.data.split(";")
     split.pop(0)
     if await Bet.is_closed(int(split[0])):
-        await callback_query.answer("Le scommesse sono chiuse, questa puntata è stata già considerata!")
+        await callback_query.answer("Le scommesse sono chiuse, questa puntata è stata già considerata!", show_alert=True)
         return
     match split[1]:
         case "yes":
@@ -765,8 +766,8 @@ async def confirm_bet(client, callback_query):
         case "no":
             user = await Bet.find_user(callback_query.message.chat.id, "no_users", callback_query.from_user.id)
     if user == None:
-        await callback_query.answer("Non hai fatto tu questa scommessa.")
+        await callback_query.answer("Non hai fatto tu questa scommessa.", show_alert=True)
     else:
-        await callback_query.answer("Scommessa confermata. Da questo momento non puoi più modificarla!")
+        await callback_query.answer("Scommessa confermata. Da questo momento non puoi più modificarla!", show_alert=True)
         await app.edit_message_text(int(split[0]), user["bet_message"],
                                     f"✅{callback_query.from_user.mention} ha confermato la scommessa di {user['qta']} biscotti sul '{'SI' if split[1] == 'yes' else 'NO'}'!")
