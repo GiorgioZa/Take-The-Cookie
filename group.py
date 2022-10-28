@@ -14,10 +14,10 @@ async def group_info(group_name, group_id, callback_query):
         group_info.append(x)
     group = await Main.app.get_chat(group_id)
     text += f"- id: {group_id}\n"\
-            "- n° utenti: {group.members_count}\n"\
-            "- n° biscotti ricevuti: {group_info[0]['n_cookie']}"\
-            "- Privacy: **{'Nascosta' if group_info[0]['privacy']==0 else 'Visibile'}**"\
-            "- Premi: **{'Non attivi' if group_info[0]['gift']==0 else 'Attivi'}**"
+            f"- n° utenti: {group.members_count}\n"\
+            f"- n° biscotti ricevuti: {group_info[0]['n_cookie']}\n"\
+            f"- Privacy: **{'Nascosta' if group_info[0]['privacy']==0 else 'Visibile'}**\n"\
+            f"- Premi: **{'Non attivi' if group_info[0]['gift']==0 else 'Attivi'}**"
     match group_info[0]["propic"]:
         case 0:
             propic = "static/img/groups/group_default.png"
@@ -52,7 +52,7 @@ async def group_info(group_name, group_id, callback_query):
                             "Ricezione Premio", callback_data="set_gift")]
                     ]))
             except Main.errors.MessageNotModified:
-                await callback_query.answer("Informazioni già aggiornate!")
+                await callback_query.answer("Informazioni già aggiornate!", show_alert=True)
                 return
 
 

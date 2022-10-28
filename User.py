@@ -47,48 +47,59 @@ async def my_stats(user_id, chat_id, message_id, callback_query):
     user_other_stats = []
     for element in user_other_stats_temp:
         user_other_stats.append(element)
-
     if user_other_stats == []:
+        if message_id != None:
+            await Main.delete_message(chat_id, message_id)
         await Main.app.send_message(chat_id, "Utente non trovato!",reply_markup=Main.InlineKeyboardMarkup(
                                           [
                                               [Main.InlineKeyboardButton(
                                                   "Aggiorna!", callback_data="update", user_id=user_id)],
                                           ]))
         return
-    text += f"\
-    - id: __{user_other_stats[0]['_id']}__"\
-    "\n- username: __{user_other_stats[0]['username']}__"\
-    "\n- biscotti in sessione: {'0' if cookie_session_qta == None else cookie_session_qta}"\
-    "\n- biscotti complessivi: {'0' if user_other_stats[0]['tot_qta'] == None else user_other_stats[0]['tot_qta']}"\
-    "\n- n° sessioni vinte:    {'0' if user_other_stats[0]['session_count'] == None else user_other_stats[0]['session_count']}"
-    match user_other_stats[0]["propic"]:
-        case 0:
-            propic = "static/img/users/user_default.png"
-        case 1:
-            propic = f"static/img/users/{user_other_stats[0]['_id']}.png"
-    match message_id:
-        case None:
-            await Main.app.send_photo(chat_id,
-                                      propic,
-                                      text,
-                                      reply_markup=Main.InlineKeyboardMarkup(
-                                          [
-                                              [Main.InlineKeyboardButton(
-                                                  "Aggiorna!", callback_data="update", user_id=user_id)],
-                                          ]))
-        case _:
-            try:
-                await Main.app.edit_message_media(chat_id, message_id,
-                                                  Main.types.InputMediaPhoto(propic))
-                await Main.app.edit_message_caption(chat_id, message_id, text,
-                                                    reply_markup=Main.InlineKeyboardMarkup(
-                                                        [
-                                                            [Main.InlineKeyboardButton(
-                                                                "Aggiorna!", callback_data="update", )],
-                                                        ]))
-            except Main.errors.MessageNotModified:
-                await callback_query.answer("Informazioni già aggiornate!")
-                return
+    else:
+        text += f"- id: __{user_other_stats[0]['_id']}__"\
+        f"\n- username: __{user_other_stats[0]['username']}__"\
+        f"\n- biscotti in sessione: {'0' if cookie_session_qta == None else cookie_session_qta}"\
+        f"\n- biscotti complessivi: {'0' if user_other_stats[0]['tot_qta'] == None else user_other_stats[0]['tot_qta']}"\
+        f"\n- n° sessioni vinte:    {'0' if user_other_stats[0]['session_count'] == None else user_other_stats[0]['session_count']}"
+        match user_other_stats[0]["propic"]:
+            case 0:
+                propic = "static/img/users/user_default.png"
+            case 1:
+                propic = f"static/img/users/{user_other_stats[0]['_id']}.png"
+        match message_id:
+            case None:
+                await Main.app.send_photo(chat_id,
+                                          propic,
+                                          text,
+                                          reply_markup=Main.InlineKeyboardMarkup(
+                                              [
+                                                  [Main.InlineKeyboardButton(
+                                                      "Aggiorna!", callback_data="update", user_id=user_id)],
+                                              ]))
+            case _:
+                try:
+                    await Main.app.edit_message_media(chat_id, message_id,
+                                                      Main.types.InputMediaPhoto(propic))
+                    await Main.app.edit_message_caption(chat_id, message_id, text,
+                                                        reply_markup=Main.InlineKeyboardMarkup(
+                                                            [
+                                                                [Main.InlineKeyboardButton(
+                                                                    "Aggiorna!", callback_data="update", )],
+                                                            ]))
+                except Main.errors.MessageNotModified:
+                    await callback_query.answer("Informazioni già aggiornate!", show_alert=True)
+                    return
+                except Main.errors.MessageEmpty:
+                    await Main.delete_message(chat_id, message_id)
+                    await Main.app.send_photo(chat_id,
+                                          propic,
+                                          text,
+                                          reply_markup=Main.InlineKeyboardMarkup(
+                                              [
+                                                  [Main.InlineKeyboardButton(
+                                                      "Aggiorna!", callback_data="update", user_id=user_id)],
+                                              ]))
 
 
 async def is_user_banned(user_id):
@@ -149,6 +160,8 @@ async def give_cookie(chat_id, command_message_id, sender, receiver, qta):
     if await User.is_user_banned(receiver.id):
         await Main.app.send_message(chat_id, f"Non puoi donare biscotti ad una persona bannata 😵‍💫!", reply_to_message_id=command_message_id)
         return
+    if receiver.id == sender:
+        await Main.app.send_message(chat_id, 'Bella mossa... Ma non puoi donare a te stesso ;)')
     query_sender_qta = await Db.user_query({"_id": sender}, {"tot_qta": 1}, "tot_qta")
     query_sender_session_qta = await Db.session_query({"_id": sender}, {"qta": 1}, "qta")
     if query_sender_qta == None:

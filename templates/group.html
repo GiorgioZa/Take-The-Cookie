@@ -26,7 +26,7 @@
                             {% if groups[0]['propic'] != 0 %}
                             <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
                             {% else %}
-                            <img src="../static/img/groups/default.png" class="circle-img mb-2" alt="User Img">
+                            <img src="../static/img/groups/group_default.svg" class="circle-img mb-2" alt="User Img">
                             {%endif%}
                             <h5 class="mb-0">{{groups[0]['name']}}</h5>
                             <hr>
@@ -43,12 +43,12 @@
                     </div>
                     <div class="leaderboard-card__body">
                         <div class="text-center">
-                            {% if groups[0]['propic'] != 0 %}
-                            <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
+                            {% if groups[1]['propic'] != 0 %}
+                            <img src="../static/img/groups/{{groups[1]['_id']}}.png" class="circle-img mb-2" alt="User Img">
                             {% else %}
-                            <img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
+                            <img src="../static/img/groups/group_default.svg" class="circle-img mb-2" alt="User Img">
                             {%endif%}
-                            <h5 class="mb-0">{{groups[0]['name']}}</h5>
+                            <h5 class="mb-0">{{groups[1]['name']}}</h5>
                             <hr>
                         </div>
                     </div>
@@ -63,12 +63,12 @@
                     </div>
                     <div class="leaderboard-card__body">
                         <div class="text-center">
-                            {% if groups[0]['propic']!= 0 %}
-                            <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
+                            {% if groups[2]['propic']!= 0 %}
+                            <img src="../static/img/groups/{{groups[2]['_id']}}.png" class="circle-img mb-2" alt="User Img">
                             {% else %}
-                            <img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
+                            <img src="../static/img/groups/group_default.svg" class="circle-img mb-2" alt="User Img">
                             {%endif%}
-                            <h5 class="mb-0">{{groups[0]['name']}}</h5>
+                            <h5 class="mb-0">{{groups[2]['name']}}</h5>
                             <hr>
                         </div>
                     </div>
@@ -86,12 +86,12 @@
                     </div>
                     <div class="leaderboard-card__body">
                         <div class="text-center">
-                            {% if groups[0]['propic'] != 0 %}
-                            <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
+                            {% if groups[1]['propic'] != 0 %}
+                            <img src="../static/img/groups/{{groups[1]['_id']}}.png" class="circle-img mb-2" alt="User Img">
                             {% else %}
-                            <img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
+                            <img src="../static/img/groups/group_default.svg" class="circle-img mb-2" alt="User Img">
                             {%endif%}
-                            <h5 class="mb-0">{{groups[0]['name']}}</h5>
+                            <h5 class="mb-0">{{groups[1]['name']}}</h5>
                             <hr>
                         </div>
                     </div>
@@ -109,7 +109,7 @@
                             {% if groups[0]['propic'] != 0 %}
                             <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
                             {% else %}
-                            <img src="../static/img/groups/default.png" class="circle-img mb-2" alt="User Img">
+                            <img src="../static/img/groups/group_default.svg" class="circle-img mb-2" alt="User Img">
                             {%endif%}
                             <h5 class="mb-0">{{groups[0]['name']}}</h5>
                             <hr>
@@ -126,12 +126,12 @@
                     </div>
                     <div class="leaderboard-card__body">
                         <div class="text-center">
-                            {% if groups[0]['propic']!= 0 %}
-                            <img src="../static/img/groups/{{groups[0]['_id']}}.png" class="circle-img mb-2" alt="User Img">
+                            {% if groups[2]['propic']!= 0 %}
+                            <img src="../static/img/groups/{{groups[2]['_id']}}.png" class="circle-img mb-2" alt="User Img">
                             {% else %}
-                            <img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
+                            <img src="../static/img/groups/group_default.svg" class="circle-img mb-2" alt="User Img">
                             {%endif%}
-                            <h5 class="mb-0">{{groups[0]['name']}}</h5>
+                            <h5 class="mb-0">{{groups[2]['name']}}</h5>
                             <hr>
                         </div>
                     </div>
@@ -153,10 +153,10 @@
                 <tr>
                     <td>
                         <div class="d-flex align-items-center">
-                            {% if element['propic']!= 0 %}
+                            {% if element['propic']!= 0  and element['Privacy'] != 0%}
                             <img src="../static/img/groups/{{element['_id']}}.png" class="circle-img mb-2" alt="User Img">
                             {% else %}
-                            <img src="../static/img/default.png" class="circle-img mb-2" alt="User Img">
+                            <img src="../static/img/groups/group_default.svg" class="circle-img mb-2" alt="User Img">
                             {%endif%}
                             <div class="user-info__basic">
                                 <h5 class="mb-0">{{element["name"]}}</h5>
