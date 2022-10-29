@@ -104,6 +104,10 @@ async def take(callback_query):
     cookie_info = []
     for x in query_temp:
         cookie_info.append(x)
+    if cookie_info == []:
+        await Main.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await Main.log_message(f'Ho dovuto eliminare il biscotto nel gruppo {callback_query.message.chat.title} per un problema!')
+        return
     if cookie_info[0]["is_taken"] == 0:  # taken cookie
         if Main.remove_scheduler(f'expired{callback_query.message.message_id}', 1) == False:
             await Main.log_message("Non sono riuscito a togliere lo scheduler del biscotto scaduto!")
