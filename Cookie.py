@@ -44,10 +44,11 @@ async def cookie(group_id):
     nbiscotti = group_info[0]["n_cookie"]
     Db.groups.update_one({"_id": group_id}, {
                          "$set": {"n_cookie": nbiscotti+1}})
-    temp_bet = await Db.bet_query({"_id": group_id}, {"result": 1}, "result")
-    if temp_bet == 0:
+    temp_bet = await Db.bet_query({"_id": group_id}, {"closed": 1}, "closed")
+    if temp_bet != None:
         Db.bet.update_one({"_id": group_id}, {"$set": {"result": 1}})
         await Bet.remove(bisquit.chat.id, True)
+    
     await Main.select_group()
     await Main.scheduler_new_date()
 

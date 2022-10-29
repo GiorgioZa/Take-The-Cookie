@@ -163,7 +163,7 @@ def randomic_choice(limit):
 
 async def find_group(groups):
     global group_id, flag
-    choice = randomic_choice(101)
+    choice = randomic_choice(176)
     selected = []
     for group in groups:
         try:
@@ -173,25 +173,35 @@ async def find_group(groups):
             continue
         if choice < 10:  # 10%
             flag = False  # small group
-            if group_members < 30:  # 0-29
+            if group_members < 16:  # 0-15
                 selected.append(group["_id"])
                 continue
-        elif choice < 10 + 20:  # 20%
+        elif choice < 10 + 15:  # 15%
             flag = False  # small group
-            if group_members >= 30 and group_members < 80:  # 30-79
+            if group_members >= 16 and group_members < 25:  # 16-24
                 selected.append(group["_id"])
                 continue
-        elif choice < 10 + 20 + 15: #15%
+        elif choice < 10 + 15 + 20:  # 20%
+            flag = False  # small group
+            if group_members >= 25 and group_members < 50:  # 25-49
+                selected.append(group["_id"])
+                continue
+        elif choice < 10 + 15 + 20 + 25:  # 25%
+            flag = False  # small group
+            if group_members >= 50 and group_members < 90:  # 25-89
+                selected.append(group["_id"])
+                continue
+        elif choice < 10 + 15 + 20 + 25 + 30 : #30%
             flag = True  # big group
-            if group_members >= 80 and group_members < 150:  # 80-149
+            if group_members >= 90 and group_members < 150:  # 90-149
                 selected.append(group["_id"])
                 continue
-        elif choice < 10 + 20 + 15 + 35:  # 35%
+        elif choice < 10 + 15 + 20 + 25 + 30 + 35:  # 35%
             flag = True  # big group
             if group_members >= 150 and group_members < 500:  # da 150 a 499
                 selected.append(group["_id"])
                 continue
-        elif choice <= 10 + 20 + 15 + 35 + 20:  # (20%)
+        elif choice <= 10 + 15 + 20 + 25 + 30 + 35 + 40:  # (40%)
             flag = True  # big group
             if group_members >= 500:  # 500+
                 selected.append(group["_id"])
@@ -259,6 +269,10 @@ async def delete_message(chat_id, message_id):
         return True
     except:
         return False
+
+#@app.on_message(filters.command("cookie"))
+#async def private_add(client, message):
+#    await Cookie.cookie(message.chat.id)
 
 
 # reminder for user to use the bot inside group
