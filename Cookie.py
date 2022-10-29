@@ -33,7 +33,7 @@ async def cookie(group_id):
         await Main.log_message(
             f"non ho inviato il biscotto nel gruppo {group_info[0]['name']} perchè ho avuto un problema")
         Db.groups.delete_one({"_id": group_id})
-        Main.restart()
+        await Main.restart()
         return
     try:
         Main.asyncioscheduler.add_job(expired, 'interval',  hours=1,
