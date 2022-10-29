@@ -184,10 +184,14 @@
 						<td>
 							<div class="d-flex align-items-center">
 								<p>
-									{% if element["group"][0]["privacy"] == 0: %}
-									*Informazione nascosta dagli admin del gruppo*
+									{% if element["group"] != []: %}
+										{% if element["group"][0]["privacy"] == 0: %}
+										*Informazione nascosta dagli admin del gruppo*
+										{% else %}
+										{{element["group"][0]["name"]}}
+										{%endif%}
 									{% else %}
-									{{element["group"][0]["name"]}}
+										*Il gruppo e' stato rimosso*
 									{%endif%}
 								</p>
 							</div>
