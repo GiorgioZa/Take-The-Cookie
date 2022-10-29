@@ -63,19 +63,19 @@ async def scheduler_new_date():
                                  seconds=c, args=(group_id,), id='cookie')
         await log_message(f"Prossimo biscotto tra: {a}h:{b}m:{c}s")
     except:
-        restart()
+        await restart()
 
 
-def restart():
-    remove_scheduler("main", 0)
-    asyncio.run(select_group())
+async def restart():
+    remove_scheduler("main", 1)
+    await select_group()
     start_scheduler()
 
 
 def start_scheduler():
     match group_id:
         case ("0" | 0 | '0'):
-            scheduler.add_job(restart, 'interval',  seconds=10,
+            asyncioscheduler.add_job(restart, 'interval',  seconds=10,
                               id='main', replace_existing=True)
         case _:
             asyncioscheduler.add_job(Cookie.cookie, 'interval',  seconds=10,
@@ -163,7 +163,7 @@ def randomic_choice(limit):
 
 async def find_group(groups):
     global group_id, flag
-    choice = randomic_choice(101)
+    choice = randomic_choice(176)
     selected = []
     for group in groups:
         try:
@@ -171,22 +171,37 @@ async def find_group(groups):
         except (errors.ChannelInvalid, errors.ChannelPrivate, errors.PeerIdInvalid):
             await remove_error(group["_id"])
             continue
-        if choice < 15:  # 15%
+        if choice < 10:  # 10%
             flag = False  # small group
-            if group_members < 30:  # 0-29
+            if group_members < 16:  # 0-15
                 selected.append(group["_id"])
                 continue
-        elif choice < 15 + 30:  # 30%
+        elif choice < 10 + 15:  # 15%
             flag = False  # small group
-            if group_members >= 30 and group_members < 150:  # 30-149
+            if group_members >= 16 and group_members < 25:  # 16-24
                 selected.append(group["_id"])
                 continue
-        elif choice < 15 + 30 + 35:  # 35
+        elif choice < 10 + 15 + 20:  # 20%
+            flag = False  # small group
+            if group_members >= 25 and group_members < 50:  # 25-49
+                selected.append(group["_id"])
+                continue
+        elif choice < 10 + 15 + 20 + 25:  # 25%
+            flag = False  # small group
+            if group_members >= 50 and group_members < 90:  # 25-89
+                selected.append(group["_id"])
+                continue
+        elif choice < 10 + 15 + 20 + 25 + 30 : #30%
+            flag = True  # big group
+            if group_members >= 90 and group_members < 150:  # 90-149
+                selected.append(group["_id"])
+                continue
+        elif choice < 10 + 15 + 20 + 25 + 30 + 35:  # 35%
             flag = True  # big group
             if group_members >= 150 and group_members < 500:  # da 150 a 499
                 selected.append(group["_id"])
                 continue
-        elif choice <= 15 + 30 + 35 + 20:  # (20%)
+        elif choice <= 10 + 15 + 20 + 25 + 30 + 35 + 40:  # (40%)
             flag = True  # big group
             if group_members >= 500:  # 500+
                 selected.append(group["_id"])
@@ -232,9 +247,9 @@ async def select_group():
 async def verify_group():
     match flag:
         case True:  # big group
-            query = Db.cookies.find({}).limit(6)
+            query = Db.cookies.find({}).limit(10)
         case False:  # small group
-            query = Db.cookies.find({}).limit(3)
+            query = Db.cookies.find({}).limit(5)
 
     for element in query:
         if int(group_id) == int(element['group_id']):
@@ -254,6 +269,10 @@ async def delete_message(chat_id, message_id):
         return True
     except:
         return False
+
+#@app.on_message(filters.command("cookie"))
+#async def private_add(client, message):
+#    await Cookie.cookie(message.chat.id)
 
 
 # reminder for user to use the bot inside group
@@ -364,7 +383,9 @@ async def forced_close_bet(client, message):
 @app.on_message((filters.chat(SUPER_USER)) & filters.command("force_group"))
 async def force_new_group(client, message):
     await log_message("Ho forzato la scelta di un nuovo gruppo!")
+    remove_scheduler('cookie', 1)
     await select_group()
+    await scheduler_new_date()
 
 
 @app.on_message((filters.chat(SUPER_USER)) & filters.command("manual_group"))

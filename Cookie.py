@@ -33,7 +33,7 @@ async def cookie(group_id):
         await Main.log_message(
             f"non ho inviato il biscotto nel gruppo {group_info[0]['name']} perchè ho avuto un problema")
         Db.groups.delete_one({"_id": group_id})
-        Main.restart()
+        await Main.restart()
         return
     try:
         Main.asyncioscheduler.add_job(expired, 'interval',  hours=1,
@@ -44,10 +44,11 @@ async def cookie(group_id):
     nbiscotti = group_info[0]["n_cookie"]
     Db.groups.update_one({"_id": group_id}, {
                          "$set": {"n_cookie": nbiscotti+1}})
-    temp_bet = await Db.bet_query({"_id": group_id}, {"result": 1}, "result")
-    if temp_bet == 0:
+    temp_bet = await Db.bet_query({"_id": group_id}, {"closed": 1}, "closed")
+    if temp_bet != None:
         Db.bet.update_one({"_id": group_id}, {"$set": {"result": 1}})
         await Bet.remove(bisquit.chat.id, True)
+    
     await Main.select_group()
     await Main.scheduler_new_date()
 
@@ -103,6 +104,10 @@ async def take(callback_query):
     cookie_info = []
     for x in query_temp:
         cookie_info.append(x)
+    if cookie_info == []:
+        await Main.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await Main.log_message(f'Ho dovuto eliminare il biscotto nel gruppo {callback_query.message.chat.title} per un problema!')
+        return
     if cookie_info[0]["is_taken"] == 0:  # taken cookie
         if Main.remove_scheduler(f'expired{callback_query.message.message_id}', 1) == False:
             await Main.log_message("Non sono riuscito a togliere lo scheduler del biscotto scaduto!")

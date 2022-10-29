@@ -28,19 +28,24 @@ async def start_bet(message_entity):
                                                   )
             Db.bet.insert_one({"_id": message_entity.chat.id, "bet_message": message.message_id,  "yes_users": [
             ], "no_users": [], "result": 0, "closed": 0, "announce": 0})
+            await Main.log_message(f'{message.chat.title} ha avviato un nuovo sondaggio!')
     Main.asyncioscheduler.add_job(close_bet, 'interval', hours=1,
                                   args=(message_entity.chat.id, message.message_id), id=f'bet{message_entity.chat.id}')
 
 
 async def close_bet(group_id, bet_id):
     Main.remove_scheduler(f"bet{group_id}", 1)
-    await Main.app.edit_message_reply_markup(group_id, bet_id, Main.InlineKeyboardMarkup([
-        [Main.InlineKeyboardButton(
-            "📛SCOMMESSE CHIUSE📛", callback_data=f"bet_expired")]
-    ]))
+    try:
+        await Main.app.edit_message_reply_markup(group_id, bet_id, Main.InlineKeyboardMarkup([
+            [Main.InlineKeyboardButton(
+                "📛SCOMMESSE CHIUSE📛", callback_data=f"bet_expired")]
+        ]))
+    except:
+        pass
     Db.bet.update_one({"_id": group_id}, {"$set": {"closed": 1}})
     await confirm_bet(group_id)
     await bet_recap(group_id)
+
 
 
 async def is_closed(group_id):
@@ -223,7 +228,7 @@ async def remove_all_group():
             await Cookie.add_cookie_complete(element_u["_id"], int(element_u["qta"])*2)
             text += f"- {username} -> 🍪 x{int(element_u['qta'])*2}\n"
         await Main.app.send_message(element["_id"], text)
-        await Cookie.find_winner_in_bet(element["_id"], element["result"])
+        await Cookie.find_winner_in_bet(element["_id"], f"{'yes_users' if element['result'] == 1 else 'no_users'}")
 
 
 async def remove(group_id, flag):
