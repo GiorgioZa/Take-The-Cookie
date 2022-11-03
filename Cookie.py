@@ -3,6 +3,7 @@ import Main
 import Bet
 import random
 import Db
+from datetime import datetime
 
 
 async def cookie(group_id):
@@ -23,10 +24,10 @@ async def cookie(group_id):
         match Main.is_gold:
             case True:
                 Db.cookies.insert_one(
-                    {"_id": bisquit.message_id, "group_id": bisquit.chat.id,  "is_taken": 0, "is_expired": 0, "value": 10})
+                    {"_id": bisquit.message_id, "group_id": bisquit.chat.id,  "is_taken": 0, "is_expired": 0, "value": 10, "date": datetime.now()})
             case False:
                 Db.cookies.insert_one(
-                    {"_id": bisquit.message_id, "group_id": bisquit.chat.id, "is_taken": 0, "is_expired": 0, "value": 1})
+                    {"_id": bisquit.message_id, "group_id": bisquit.chat.id, "is_taken": 0, "is_expired": 0, "value": 1, "date": datetime.now()})
         await Main.log_message(
             f"ho inviato biscotto nel gruppo: '{bisquit.chat.title}'")
     except:  # cookie invalid or something else
@@ -107,7 +108,7 @@ async def take(callback_query):
     if cookie_info == []:
         await Main.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
         await Main.log_message(f'Ho dovuto eliminare il biscotto nel gruppo {callback_query.message.chat.title} per un problema!')
-        return
+        return False
     if cookie_info[0]["is_taken"] == 0:  # taken cookie
         if Main.remove_scheduler(f'expired{callback_query.message.message_id}', 1) == False:
             await Main.log_message("Non sono riuscito a togliere lo scheduler del biscotto scaduto!")
@@ -115,17 +116,23 @@ async def take(callback_query):
         general_qta = await Db.user_query({"_id": callback_query.from_user.id}, {"tot_qta": 1}, "tot_qta")
         match cookie_info[0]["is_expired"]:
             case 1:  # cookie expired
-                await modify_expired_cookie_message(callback_query)
+                a = await modify_expired_cookie_message(callback_query)
+                if not a:
+                    return False
             case 0:  # cookie not expired
                 match cookie_info[0]["value"]:
                     case 1:
+                        a = await modify_cookie_message(callback_query)
+                        if not a:
+                            return False 
                         await cookie_stuff_after_taken(callback_query, 1, session_qta, general_qta)
-                        await modify_cookie_message(callback_query)
                     case 10:
+                        a = await modify_golden_cookie_message(callback_query)
+                        if not a:
+                            return False 
                         await cookie_stuff_after_taken(callback_query, 10, session_qta, general_qta)
-                        await modify_golden_cookie_message(callback_query)
     else:
-        return
+        return True
 
 
 def update_cookie_quantity(query_receiver_global, query_receiver_session, qta, chat_id, user):
@@ -232,18 +239,24 @@ async def find_winner_in_bet(group_id, type):
 async def alert_win(winner, group):
     all_group = Db.groups.find({"_id": {"$ne": group}}, {"_id": 1})
     for element in all_group:
-        await Main.app.send_message(
-            element["_id"], f"La sessione corrente è appena terminata ed ha visto come vincitore {winner}🤩! "\
-                "I biscotti, però, non hanno tregua e anche durante i festeggiamenti, "\
-                "continuano ad apparire nei gruppi e a corgliervi di sorpresa. "\
-                "Per questo motivo dovreste tenere sempre gli occhi aperti👀, "\
-                "il prossimo biscotto è dietro l'angolo🌚 che aspetta solo di essere divorato😋."\
-                "\nGood Luck❤️")
+        try:
+            await Main.app.send_message(
+                element["_id"], f"La sessione corrente è appena terminata ed ha visto come vincitore {winner}🤩! "\
+                    "I biscotti, però, non hanno tregua e anche durante i festeggiamenti, "\
+                    "continuano ad apparire nei gruppi e a corgliervi di sorpresa. "\
+                    "Per questo motivo dovreste tenere sempre gli occhi aperti👀, "\
+                    "il prossimo biscotto è dietro l'angolo🌚 che aspetta solo di essere divorato😋."\
+                    "\nGood Luck❤️")
+        except:
+            pass
 
 
 async def modify_golden_cookie_message(callback_query):
-    await Main.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
-                                     f"Il 🍪 d'oro è stato mangiato da {callback_query.from_user.mention()}🎉!")
+    try:
+        await Main.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
+                                         f"Il 🍪 d'oro è stato mangiato da {callback_query.from_user.mention()}🎉!")
+    except:
+        return False
     await callback_query.answer(
         f"Complimenti🥳 {callback_query.from_user.first_name}! Hai divorato il biscotto d'oro 🌕!", show_alert=True)
     await Main.log_message(
@@ -251,8 +264,11 @@ async def modify_golden_cookie_message(callback_query):
 
 
 async def modify_cookie_message(callback_query):
-    await Main.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
-                                     f"Il 🍪 è stato mangiato da {callback_query.from_user.mention()}🎉!")
+    try:
+        await Main.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
+                                         f"Il 🍪 è stato mangiato da {callback_query.from_user.mention()}🎉!")
+    except:
+        return False
     await callback_query.answer(
         f"Complimenti🥳 {callback_query.from_user.first_name}! Hai divorato il biscotto 🤤!", show_alert=True)
     await Main.log_message(
@@ -263,6 +279,12 @@ async def modify_expired_cookie_message(callback_query):
     session_qta = await Db.session_query({"_id": callback_query.from_user.id}, {"qta": 1}, "qta")
     general_qta = await Db.user_query({"_id": callback_query.from_user.id}, {"tot_qta": 1}, "tot_qta")
     if random.choice([False, True]):  # biscotto avariato
+        try:
+            await Main.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
+                                             f"Oh no🥺! {callback_query.from_user.mention} ha mangiato un biscotto avariato 🤢.\n"\
+                                              "Press F to pay respect 🙏.")
+        except:
+            return False
         if session_qta != None:
             qta = 0 if session_qta-1 < 0 else session_qta-1
             tot_qta = 0 if general_qta-1 < 0 else general_qta-1
@@ -270,9 +292,6 @@ async def modify_expired_cookie_message(callback_query):
                                   "$set": {"qta": qta}})
             Db.users.update_one({"_id": callback_query.from_user.id}, {
                                 "$set": {"tot_qta": tot_qta}})
-        await Main.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
-                                         f"Oh no🥺! {callback_query.from_user.mention} ha mangiato un biscotto avariato 🤢.\n"\
-                                          "Press F to pay respect 🙏.")
         await callback_query.answer(
             f"Che peccato. Questo biscotto ha atteso per troppo tempo che qualcuno lo mangiasse ed è avariato🥺🤢... "\
             "Sei stato avvelenato, hai vomitato e hai perso un biscotto!😵‍💫", show_alert=True)
@@ -280,10 +299,13 @@ async def modify_expired_cookie_message(callback_query):
             f"Biscotto avariato del gruppo: {callback_query.message.chat.title} riscattato da: @{callback_query.from_user.username if callback_query.from_user.username!=None else callback_query.from_user.first_name}")
     else:
         qta = await Db.cookie_query({"_id": callback_query.message.message_id}, {"value": 1}, "value")
+        try:
+            await Main.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
+                                             f"Che fortuna!🍀 {callback_query.from_user.mention} ha mangiato un biscotto avariato senza subire conseguenze.\n"\
+                                            "Che utente fortunato😮‍💨.")
+        except:
+            return False
         await cookie_stuff_after_taken(callback_query, qta, session_qta, general_qta)
-        await Main.app.edit_message_text(callback_query.message.chat.id, callback_query.message.message_id,
-                                         f"Che fortuna!🍀 {callback_query.from_user.mention} ha mangiato un biscotto avariato senza subire conseguenze.\n"\
-                                        "Che utente fortunato😮‍💨.")
         await callback_query.answer(
             f"WOW😳, caro {callback_query.from_user.first_name} che fortuna! "\
                 "Hai divorato il biscotto avariato senza conseguenze!", show_alert=True)

@@ -81,7 +81,8 @@ async def insert_group_in_db(group_id, user_id):
         await Main.log_message(
             f"Ho avuto un problema ad inserire il gruppo: {chat.title}!")
         return False
-    await Main.download_group_pic(group_id)
+    if not await Main.download_group_pic(group_id):
+        return False
     user_name = user.username if user.username != None else user.mention()
     await Main.log_message(
         f"Ho aggiunto un nuovo gruppo: {chat.title} da parte di: {user_name}!")

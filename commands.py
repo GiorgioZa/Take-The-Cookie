@@ -50,7 +50,7 @@ async def private_group_info(chat_id):
                                         "\nAggiungimi ad un gruppo per poter visualizzare le stue statistiche!")
 
 
-async def show_leaderboard(chat_id, message_id, flag, flag_edit):
+async def show_leaderboard(chat_id, message_id, flag, callbackquery):
     search_key = ""
     match flag:
         case 0:
@@ -83,14 +83,14 @@ async def show_leaderboard(chat_id, message_id, flag, flag_edit):
         text += "\nPer vedere la classifica completa, visita il sito (https://bit.ly/3ODSCXO)!"
     else:
         text = "**NESSUN UTENTE HA ANCORA RISCATTATO BISCOTTI. LA CLASSIFICA NON PUO' ESSERE GENERATA!"
-    match flag_edit:
-        case 0:
+    match callbackquery:
+        case None:
             await Main.app.send_message(chat_id, text, reply_markup=reply_markup)
-        case 1:
+        case _:
             try:
                 await Main.app.edit_message_text(chat_id, message_id, text, reply_markup=reply_markup)
             except:
-                return
+                callbackquery.answer("Informazioni gia' aggiornate!", show_alert=True)
 
 
 async def change_privacy_property(chat_id, chat_title, message_id):
