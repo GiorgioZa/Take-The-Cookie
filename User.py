@@ -42,7 +42,7 @@ async def modify_user_qta(user_id, qta):
 
 async def my_stats(user_id, chat_id, message_id, callback_query):
     user = await Main.app.get_users(user_id)
-    text = f"Statistiche di {user.mention}:\n"
+    text = f"Statistiche di **{user.mention}**:\n"
     cookie_session_qta = await Db.session_query({"_id": user_id}, {"qta": 1}, "qta")
     user_other_stats_temp = Db.users.find({"_id": user_id}, {})
     user_other_stats = []

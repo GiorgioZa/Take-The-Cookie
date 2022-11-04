@@ -109,24 +109,24 @@ async def remove_error(group_id):
         pass
 
 
-async def download_propic(user):
-    user_id = user.from_user.id
+async def download_propic(user_id):
+    user = app.get_users(user_id)
     a = await test_download_propic(user, user_id)
     return a
 
 
 async def test_download_propic(user, user_id):
-    propic = Db.user_query({'_id': user_id}, {"propic": 1}, 'propic')
+    propic = await Db.user_query({'_id': user_id}, {"propic": 1}, 'propic')
     if propic == 1:
         try:
             os.remove(f"static/img/users/{user_id}.png")
         except:
             pass
-        a = really_download(user)
-        update_db_propic(a, user)
+        a = await really_download(user)
+        update_db_propic(a, user_id)
     else: #propic 0
-        a = really_download(user)
-        update_db_propic(a, user)
+        a = await really_download(user)
+        update_db_propic(a, user_id)
 
 
 def update_db_propic(element, user_id):
@@ -158,17 +158,17 @@ async def download_group_pic(group_id):
 
 
 async def test_download_group_pic(group, group_id):
-    propic = Db.group_query({'_id': group_id}, {"propic": 1}, 'propic')
+    propic = await Db.group_query({'_id': group_id}, {"propic": 1}, 'propic')
     if propic == 1:
         try:
             os.remove(f"static/img/groups/{group_id}.png")
         except:
             pass
-        a = really_download_group(group)
-        update_db_propic_group(a, group)
+        a = await really_download_group(group)
+        update_db_propic_group(a, group_id)
     else: #propic 0
-        a = really_download_group(group)
-        update_db_propic_group(a, group)
+        a = await really_download_group(group)
+        update_db_propic_group(a, group_id)
 
 
 def update_db_propic_group(element, group_id):
@@ -604,7 +604,7 @@ async def taken_cookie(client, callback_query):
             "Non puoi riscattare questo biscotto😵‍💫! Scopri se sei stato bannato usando il comando /im_banned !", show_alert=True)
         return
     if not await Cookie.take(callback_query):
-        callback_query.answer("Errore durante l'azione. Verifica se il biscotto e' stato gia' riscattato :)", show_alert=True)
+        await callback_query.answer("Errore durante l'azione. Verifica se il biscotto e' stato gia' riscattato :)", show_alert=True)
 
 
 @app.on_callback_query(filters.regex("take_expired"))
@@ -614,7 +614,7 @@ async def take_expired_cookie(client, callback_query):
             "Non puoi riscattare questo biscotto😵‍💫! Scopri se sei stato bannato usando il comando /im_banned !", show_alert=True)
         return
     if not await Cookie.take(callback_query):
-        callback_query.answer("Errore durante l'azione. Verifica se il biscotto e' stato gia' riscattato :)", show_alert=True)
+        await callback_query.answer("Errore durante l'azione. Verifica se il biscotto e' stato gia' riscattato :)", show_alert=True)
 
 
 async def donation_bill(inline_query):

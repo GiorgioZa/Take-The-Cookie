@@ -90,7 +90,7 @@ async def show_leaderboard(chat_id, message_id, flag, callbackquery):
             try:
                 await Main.app.edit_message_text(chat_id, message_id, text, reply_markup=reply_markup)
             except:
-                callbackquery.answer("Informazioni gia' aggiornate!", show_alert=True)
+                await callbackquery.answer("Informazioni gia' aggiornate!", show_alert=True)
 
 
 async def change_privacy_property(chat_id, chat_title, message_id):

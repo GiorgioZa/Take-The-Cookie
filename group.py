@@ -7,15 +7,15 @@ from datetime import datetime
 
 
 async def group_info(group_name, group_id, callback_query):
-    text = f"Statistiche del gruppo {group_name}\n"
+    text = f"Statistiche del gruppo **{group_name}**\n"
     group_info_temp = Db.groups.find({"_id": group_id})
     group_info = []
     for x in group_info_temp:
         group_info.append(x)
     group = await Main.app.get_chat(group_id)
-    text += f"- id: {group_id}\n"\
-            f"- n° utenti: {group.members_count}\n"\
-            f"- n° biscotti ricevuti: {group_info[0]['n_cookie']}\n"\
+    text += f"- id: __{group_id}__\n"\
+            f"- n° utenti: __{group.members_count}__\n"\
+            f"- n° biscotti ricevuti: __{group_info[0]['n_cookie']}__\n"\
             f"- Privacy: **{'Nascosta' if group_info[0]['privacy']==0 else 'Visibile'}**\n"\
             f"- Premi: **{'Non attivi' if group_info[0]['gift']==0 else 'Attivi'}**"
     match group_info[0]["propic"]:
