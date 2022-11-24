@@ -80,8 +80,7 @@ def start_scheduler():
         case _:
             asyncioscheduler.add_job(Cookie.cookie, 'interval',  seconds=10,
                                      args=(group_id,), id='cookie', replace_existing=True)
-    bets = Db.bet.find({"closed": 0})
-    for element in bets:
+    for element in Db.bet.find({"closed": 0}):
         try:
             asyncioscheduler.add_job(Bet.close_bet, 'interval', minutes=10,
                                      args=(element["_id"], element["bet_message"]), id=f'bet{element["_id"]}')
@@ -100,8 +99,9 @@ def time_scheduler():
 
 
 async def remove_error(group_id):
+    query = await Db.group_query({"_id": group_id},{'name': 1}, 'name')
     Db.groups.delete_one({"_id": group_id})
-    await log_message(f"Ho eliminato il gruppo con questo id: {group_id}")
+    await log_message(f"Ho eliminato il gruppo {query} con questo id: {group_id} ")
     try:
         await app.send_message(
             group_id, f"A causa di un errore di sistema, questo gruppo è stato rimosso dal database😵‍💫, puoi riaggiungerlo usando il comando /add ;)")
@@ -109,47 +109,88 @@ async def remove_error(group_id):
         pass
 
 
-async def download_propic(user):
-    user_id = user.from_user.id
-    try:
-        await test_download_propic(user, user_id)
-    except:
-        return
+async def download_propic(user_id):
+    user = await app.get_users(user_id)
+    a = await test_download_propic(user, user_id)
+    return a
 
 
 async def test_download_propic(user, user_id):
-    try:
-        await app.download_media(user.from_user.photo.big_file_id,
-                                 f"static/img/users/{user_id}.png")
-        Db.users.update_one({"_id": user_id}, {
-            "$set": {"propic": 1}})
-        return True
-    except:
+    propic = await Db.user_query({'_id': user_id}, {"propic": 1}, 'propic')
+    if propic == 1:
+        try:
+            os.remove(f"static/img/users/{user_id}.png")
+        except:
+            pass
+        a = await really_download(user)
+        update_db_propic(a, user_id)
+    else: #propic 0
+        a = await really_download(user)
+        update_db_propic(a, user_id)
+
+
+def update_db_propic(element, user_id):
+    if not element:
         Db.users.update_one({"_id": user_id}, {
             "$set": {"propic": 0}})
         return False
+    else:
+        Db.users.update_one({"_id": user_id}, {
+            "$set": {"propic": 1}})
+        return True
+
+
+
+async def really_download(user):
+    try:
+        await app.download_media(user.from_user.photo.big_file_id,
+                                     f"static/img/users/{user.from_user.id}.png")
+    except:
+        return False
+    return True
+
 
 
 async def download_group_pic(group_id):
-    group = await app.get_chat(group_id)
-    a = None
-    try:
-        a = await test_download_group_pic(group, group_id)
-    except:
-        return a
+    group = await try_get_chat(group_id)
+    a = await test_download_group_pic(group, group_id)
+    return a
 
 
 async def test_download_group_pic(group, group_id):
-    try:
-        await app.download_media(group.photo.big_file_id,
-                                 f"static/img/groups/{group_id}.png")
-        Db.groups.update_one({"_id": group_id}, {
-            "$set": {"propic": 1}})
-        return True
-    except:
+    propic = await Db.group_query({'_id': group_id}, {"propic": 1}, 'propic')
+    if propic == 1:
+        try:
+            os.remove(f"static/img/groups/{group_id}.png")
+        except:
+            pass
+        a = await really_download_group(group)
+        update_db_propic_group(a, group_id)
+    else: #propic 0
+        a = await really_download_group(group)
+        update_db_propic_group(a, group_id)
+
+
+def update_db_propic_group(element, group_id):
+    if not element:
         Db.groups.update_one({"_id": group_id}, {
             "$set": {"propic": 0}})
         return False
+    else:
+        Db.groups.update_one({"_id": group_id}, {
+            "$set": {"propic": 1}})
+        return True
+
+
+
+async def really_download_group(group):
+    try:
+        await app.download_media(group.photo.big_file_id,
+                                     f"static/img/groups/{group.id}.png")
+    except:
+        return False
+    return True
+
 
 
 async def log_message(message):
@@ -168,7 +209,7 @@ async def find_group(groups):
     for group in groups:
         try:
             group_members = await app.get_chat_members_count(group["_id"])
-        except (errors.ChannelInvalid, errors.ChannelPrivate, errors.PeerIdInvalid):
+        except:
             await remove_error(group["_id"])
             continue
         if choice < 10:  # 10%
@@ -210,7 +251,9 @@ async def find_group(groups):
         random.shuffle(selected)
         text = f"Il numero randomico è: {choice}. La scelta ricade tra questi gruppi:\n"
         for element in selected:
-            name = await app.get_chat(element)
+            name = await try_get_chat(element)
+            if not name:
+                select_group()
             text += f"- {name.title}\n"
         await log_message(f"{text}")
         group_id = selected[randomic_choice(len(selected))]
@@ -229,9 +272,8 @@ async def select_group():
     match is_golden:
         case (0 | 100): is_gold = True
         case _: is_gold = False
-    groups_temp = Db.groups.find({}).sort("n_cookie", -1)
     groups = []
-    for element in groups_temp:
+    for element in Db.groups.find({}).sort("n_cookie", -1):
         groups.append(element)
     if len(groups) >= 2:
         await find_group(groups)
@@ -247,9 +289,9 @@ async def select_group():
 async def verify_group():
     match flag:
         case True:  # big group
-            query = Db.cookies.find({}).limit(10)
+            query = Db.cookies.find({}).limit(10).sort('date', -1)
         case False:  # small group
-            query = Db.cookies.find({}).limit(5)
+            query = Db.cookies.find({}).limit(5).sort('date', -1)
 
     for element in query:
         if int(group_id) == int(element['group_id']):
@@ -258,9 +300,20 @@ async def verify_group():
             return
         else:
             break
-    group_name = await app.get_chat(group_id)
+    group_name = await try_get_chat(group_id)
+    if not group_name:
+        await select_group()
+        return
     await log_message(
         f"Il prossimo gruppo in cui verrà inviato il biscotto è: {group_name.title}")
+
+
+async def try_get_chat(group_id):
+    try:
+        return await app.get_chat(group_id)
+    except: #if there's an exception it mean that we've a problem with the group or with the group id, better change
+        await log_message(f"ho avuto un problema nell'ottenere info con get_chat per il gruppo con id {group_id}")
+        return False
 
 
 async def delete_message(chat_id, message_id):
@@ -306,6 +359,7 @@ async def private_quit(client, message):
 
 @app.on_callback_query(filters.regex("quit_group"))
 async def quit_group(client, callback_query):
+    await delete_message(callback_query.message.chat.id, callback_query.message.message_id)
     if not await Group.verify_admin(callback_query.from_user.id, callback_query.message.chat.id) or await User.is_user_banned(callback_query.from_user.id):
         await callback_query.answer("Non puoi usare questa funzione! Non sei admin oppure scopri se sei stato bannato usando il comando /im_banned !", show_alert=True)
     else:
@@ -316,7 +370,7 @@ async def quit_group(client, callback_query):
 @app.on_message(filters.command("list"))
 async def show_leaderboard(client, message):
     await delete_message(message.chat.id, message.message_id)
-    await Commands.show_leaderboard(message.chat.id, 0, 0, 0)
+    await Commands.show_leaderboard(message.chat.id, 0, 0, None)
 
 
 @app.on_message((filters.group) & filters.command("bet"))
@@ -375,8 +429,7 @@ async def cookie(client, message):
 @app.on_message((filters.chat(SUPER_USER)) & filters.command("force_close"))
 async def forced_close_bet(client, message):
     await log_message("Ho forzato la chiusura delle scommesse anticipate!")
-    query = Db.bet.find({})
-    for element in query:
+    for element in Db.bet.find({}):
         await Bet.close_bet(element["_id"], element["bet_message"])
 
 
@@ -393,14 +446,11 @@ async def def_new_group(client, message):
     global group_id
     text = message.text.split("/manual_group ")
     text.pop(0)
-    try:
-        test = await app.get_chat(text[0])
-    except:
+    test = await try_get_chat(text[0])
+    if not test:
         await app.send_message(message.chat.id, "Identificativo del gruppo errato")
         return
-
-    query = await Db.group_query({"_id": int(text[0])}, {"_id": 1}, "_id")
-    if query == None:
+    if await Db.group_query({"_id": int(text[0])}, {"_id": 1}, "_id") == None:
         await app.send_message(message.chat.id, "Gruppo non trovato all'interno del database")
     else:
         group_id = text[0]
@@ -432,6 +482,7 @@ async def modify_user(client, message):
 
 @app.on_callback_query(filters.regex("update_group_stat"))
 async def modify_group_info(client, callback_query):
+    await download_group_pic(callback_query.message.chat.id)
     await Group.group_info(callback_query.message.chat.title, callback_query.message.chat.id, callback_query)
 
 
@@ -453,12 +504,12 @@ async def det_gift(client, callback_query):
             "\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.", show_alert=True)
     else:
         await Commands.change_gifts_property(
-            callback_query.message.chat.id, callback_query.message.chat.title, callback_query.message.message_id)
+            callback_query.message.chat.id, callback_query.message.chat.title, callback_query)
 
 
 @app.on_message(filters.command("dev"))
 async def dev_info(client, message):
-    await app.send_message(message.chat.id, f"Versione biscotti: 2.5.2"\
+    await app.send_message(message.chat.id, f"Versione biscotti: 2.5.3"\
                                             "\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️."\
                                             "\nUltime info sul bot -> canale ufficiale (https://t.me/TakeTheCookie)")
 
@@ -524,17 +575,22 @@ async def update_ban(client, callback_query):
 
 @app.on_callback_query(filters.regex("update_stats"))
 async def update_stats(client, callback_query):
-    await Commands.show_leaderboard(callback_query.message.chat.id, callback_query.message.message_id, 0, 1)
+    await Commands.show_leaderboard(callback_query.message.chat.id, callback_query.message.message_id, 0, callback_query)
 
 
 @app.on_callback_query(filters.regex("update"))
 async def update_stats(client, callback_query):
     await User.my_stats(callback_query.from_user.id, callback_query.message.chat.id, callback_query.message.message_id, callback_query)
 
+@app.on_callback_query(filters.regex("update_propic"))
+async def update_user_propic(client, callback_query):
+    await download_propic(callback_query.from_user.id)
+    await User.my_stats(callback_query.from_user.id, callback_query.message.chat.id, callback_query.message.message_id, callback_query)
+
 
 @app.on_callback_query(filters.regex("global_stats"))
 async def global_stats(client, callback_query):
-    await Commands.show_leaderboard(callback_query.message.chat.id, callback_query.message.message_id, 1, 1)
+    await Commands.show_leaderboard(callback_query.message.chat.id, callback_query.message.message_id, 1, callback_query)
 
 
 @app.on_callback_query(filters.regex("take_it"))
@@ -543,7 +599,8 @@ async def taken_cookie(client, callback_query):
         await callback_query.answer(
             "Non puoi riscattare questo biscotto😵‍💫! Scopri se sei stato bannato usando il comando /im_banned !", show_alert=True)
         return
-    await Cookie.take(callback_query)
+    if not await Cookie.take(callback_query):
+        await callback_query.answer("Errore durante l'azione. Verifica se il biscotto e' stato gia' riscattato :)", show_alert=True)
 
 
 @app.on_callback_query(filters.regex("take_expired"))
@@ -552,7 +609,8 @@ async def take_expired_cookie(client, callback_query):
         await callback_query.answer(
             "Non puoi riscattare questo biscotto😵‍💫! Scopri se sei stato bannato usando il comando /im_banned !", show_alert=True)
         return
-    await Cookie.take(callback_query)
+    if not await Cookie.take(callback_query):
+        await callback_query.answer("Errore durante l'azione. Verifica se il biscotto e' stato gia' riscattato :)", show_alert=True)
 
 
 async def donation_bill(inline_query):
@@ -656,9 +714,7 @@ async def bet(client, inline_query):
                 if user_qta >= 14:
                     user_qta = 14
                 flag = False
-                verify_previus_bet = Db.bet.find({"_id": int(split[1])}, {
-                                                 "yes_users": 1, "no_users": 1})
-                for element in verify_previus_bet:
+                for element in Db.bet.find({"_id": int(split[1])}, {"yes_users": 1, "no_users": 1}):
                     for bets in element["yes_users"]:
                         if bets["_id"] == inline_query.from_user.id:
                             flag = True
@@ -761,17 +817,29 @@ async def change_bet_qta(client, callback_query):
     if user_db_info == None:
         await callback_query.answer("Non hai fatto tu questa scommessa.", show_alert=True)
         return
-    await app.edit_message_text(int(split[0]), user_db_info["bet_message"],
-                                f"{callback_query.from_user.mention} ha scommesso {user_db_info['qta']} biscotti sul '{'SI' if split[1] == 'yes' else 'NO'}'!"\
-            "\nSe vuoi cambiare puntata o eliminarla del tutto, usa le impostazioni allegate al messagio!",
-                                reply_markup=InlineKeyboardMarkup([
-                                    [InlineKeyboardButton(
-                                        "❗️Elimina puntata❗️", callback_data=f"delete_user_bet;{split[0]};{split[1]}")],
-                                    [InlineKeyboardButton(
-                                        f"👀Sposta puntata👀", callback_data=f"change_bet;{split[0]};{split[1]}")],
-                                    [InlineKeyboardButton(
-                                        f"✅Conferma puntata✅", callback_data=f"def_bet;{split[0]};{split[1]}")]
-                                ]))
+    try:
+        await app.edit_message_text(int(split[0]), user_db_info["bet_message"],
+                                    f"{callback_query.from_user.mention} ha scommesso {user_db_info['qta']} biscotti sul '{'SI' if split[1] == 'yes' else 'NO'}'!"\
+                "\nSe vuoi cambiare puntata o eliminarla del tutto, usa le impostazioni allegate al messagio!",
+                                    reply_markup=InlineKeyboardMarkup([
+                                        [InlineKeyboardButton(
+                                            "❗️Elimina puntata❗️", callback_data=f"delete_user_bet;{split[0]};{split[1]}")],
+                                        [InlineKeyboardButton(
+                                            f"👀Sposta puntata👀", callback_data=f"change_bet;{split[0]};{split[1]}")],
+                                        [InlineKeyboardButton(
+                                            f"✅Conferma puntata✅", callback_data=f"def_bet;{split[0]};{split[1]}")]
+                                    ]))
+    except:
+        match split[1]:
+            case "yes":
+                split[1] = "no"
+                user_db_info = await Bet.change_user_bet(int(split[0]), callback_query.from_user.id, "yes_users")
+            case "no":
+                split[1] = "yes"
+                user_db_info = await Bet.change_user_bet(int(split[0]), callback_query.from_user.id, "no_users")
+        await callback_query.answer("Errore durante il processo, nessuna modifica e' stata completata.", show_alert=True)
+        await log_message("Errore durante il processo di scambio scommessa.")
+        
 
 
 @app.on_callback_query(filters.regex("^def_bet\;\-\d+\;\w+$"))
@@ -790,5 +858,8 @@ async def confirm_bet(client, callback_query):
         await callback_query.answer("Non hai fatto tu questa scommessa.", show_alert=True)
     else:
         await callback_query.answer("Scommessa confermata. Da questo momento non puoi più modificarla!", show_alert=True)
-        await app.edit_message_text(int(split[0]), user["bet_message"],
-                                    f"✅{callback_query.from_user.mention} ha confermato la scommessa di {user['qta']} biscotti sul '{'SI' if split[1] == 'yes' else 'NO'}'!")
+        try:
+            await app.edit_message_text(int(split[0]), user["bet_message"],
+                                        f"✅{callback_query.from_user.mention} ha confermato la scommessa di {user['qta']} biscotti sul '{'SI' if split[1] == 'yes' else 'NO'}'!")
+        except:
+            callback_query.answer("Errore durante il completamento dell'operazione. Nessuna modifica e' stata completata!", show_alert=True)

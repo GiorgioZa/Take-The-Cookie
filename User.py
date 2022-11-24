@@ -39,13 +39,13 @@ async def modify_user_qta(user_id, qta):
         await Cookie.win_complete(user_id, group)
 
 
+
 async def my_stats(user_id, chat_id, message_id, callback_query):
     user = await Main.app.get_users(user_id)
-    text = f"Statistiche di {user.mention}:\n"
+    text = f"Statistiche di **{user.mention}**:\n"
     cookie_session_qta = await Db.session_query({"_id": user_id}, {"qta": 1}, "qta")
-    user_other_stats_temp = Db.users.find({"_id": user_id}, {})
     user_other_stats = []
-    for element in user_other_stats_temp:
+    for element in Db.users.find({"_id": user_id}, {}):
         user_other_stats.append(element)
     if user_other_stats == []:
         if message_id != None:
@@ -75,7 +75,9 @@ async def my_stats(user_id, chat_id, message_id, callback_query):
                                           reply_markup=Main.InlineKeyboardMarkup(
                                               [
                                                   [Main.InlineKeyboardButton(
-                                                      "Aggiorna!", callback_data="update", user_id=user_id)],
+                                                      "Aggiorna!", callback_data="update", user_id=user_id), 
+                                                    Main.InlineKeyboardButton(
+                                                      "Aggiorna propic", callback_data="update_propic", user_id=user_id)],
                                               ]))
             case _:
                 try:
@@ -85,7 +87,9 @@ async def my_stats(user_id, chat_id, message_id, callback_query):
                                                         reply_markup=Main.InlineKeyboardMarkup(
                                                             [
                                                                 [Main.InlineKeyboardButton(
-                                                                    "Aggiorna!", callback_data="update", )],
+                                                                  "Aggiorna!", callback_data="update", user_id=user_id), 
+                                                                Main.InlineKeyboardButton(
+                                                                  "Aggiorna propic", callback_data="update_propic", user_id=user_id)],
                                                             ]))
                 except Main.errors.MessageNotModified:
                     await callback_query.answer("Informazioni già aggiornate!", show_alert=True)
@@ -98,7 +102,9 @@ async def my_stats(user_id, chat_id, message_id, callback_query):
                                           reply_markup=Main.InlineKeyboardMarkup(
                                               [
                                                   [Main.InlineKeyboardButton(
-                                                      "Aggiorna!", callback_data="update", user_id=user_id)],
+                                                      "Aggiorna!", callback_data="update", user_id=user_id), 
+                                                    Main.InlineKeyboardButton(
+                                                      "Aggiorna propic", callback_data="update_propic", user_id=user_id)],
                                               ]))
 
 

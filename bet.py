@@ -29,8 +29,8 @@ async def start_bet(message_entity):
             Db.bet.insert_one({"_id": message_entity.chat.id, "bet_message": message.message_id,  "yes_users": [
             ], "no_users": [], "result": 0, "closed": 0, "announce": 0})
             await Main.log_message(f'{message.chat.title} ha avviato un nuovo sondaggio!')
-    Main.asyncioscheduler.add_job(close_bet, 'interval', hours=1,
-                                  args=(message_entity.chat.id, message.message_id), id=f'bet{message_entity.chat.id}')
+            Main.asyncioscheduler.add_job(close_bet, 'interval', hours=1,
+                                          args=(message_entity.chat.id, message.message_id), id=f'bet{message_entity.chat.id}')
 
 
 async def close_bet(group_id, bet_id):
@@ -53,8 +53,7 @@ async def is_closed(group_id):
 
 
 async def bet_recap(group_id):
-    flag = await Db.bet_query({"_id": group_id}, {"announce"}, "announce")
-    if flag == 0:
+    if await Db.bet_query({"_id": group_id}, {"announce"}, "announce") == 0:
         Db.bet.update_one({"_id": group_id}, {"$set": {"announce": 1}})
         text = f"Riassunto delle scommesse nel gruppo **{await Db.group_query({'_id': group_id}, {'name'},'name')}**:\n"
         yes_bet = await Db.bet_query({"_id": group_id}, {"yes_users"}, "yes_users")
@@ -208,6 +207,7 @@ async def remove_single_group(group_id, flag):
             text += f"- {username} -> 🍪 x{int(element['qta'])*2}\n"
     await Main.app.send_message(group_id, text)
     await Cookie.find_winner_in_bet(group_id, f"{'yes_users' if query==1 else 'no_users'}")
+    Db.bet.delete_one({"_id": group_id})
 
 
 async def remove_all_group():
@@ -229,6 +229,7 @@ async def remove_all_group():
             text += f"- {username} -> 🍪 x{int(element_u['qta'])*2}\n"
         await Main.app.send_message(element["_id"], text)
         await Cookie.find_winner_in_bet(element["_id"], f"{'yes_users' if element['result'] == 1 else 'no_users'}")
+    Db.bet.delete_many({})
 
 
 async def remove(group_id, flag):
@@ -238,4 +239,3 @@ async def remove(group_id, flag):
             await remove_all_group()
         case _:
             await remove_single_group(group_id, flag)
-    Db.bet.delete_one({"_id": group_id})
