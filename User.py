@@ -44,9 +44,8 @@ async def my_stats(user_id, chat_id, message_id, callback_query):
     user = await Main.app.get_users(user_id)
     text = f"Statistiche di **{user.mention}**:\n"
     cookie_session_qta = await Db.session_query({"_id": user_id}, {"qta": 1}, "qta")
-    user_other_stats_temp = Db.users.find({"_id": user_id}, {})
     user_other_stats = []
-    for element in user_other_stats_temp:
+    for element in Db.users.find({"_id": user_id}, {}):
         user_other_stats.append(element)
     if user_other_stats == []:
         if message_id != None:

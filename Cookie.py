@@ -167,7 +167,7 @@ async def cookie_stuff_after_taken(callback_query, qta, session_qta, general_qta
     update_cookie_quantity(general_qta, session_qta, qta,
                            callback_query.message.chat.id, user)
     await win_complete(callback_query.from_user.id, callback_query.message.chat.id)
-    await Main.download_propic(callback_query)
+    await Main.download_propic(callback_query.from_user.id)
     Db.groups.update_one({"_id": callback_query.message.chat.id}, {
                          "$set": {"name": callback_query.message.chat.title}})
 
@@ -261,7 +261,7 @@ async def modify_golden_cookie_message(callback_query):
         f"Complimenti🥳 {callback_query.from_user.first_name}! Hai divorato il biscotto d'oro 🌕!", show_alert=True)
     await Main.log_message(
         f"Biscotto d'oro del gruppo: {callback_query.message.chat.title} riscattato da: @{callback_query.from_user.username if callback_query.from_user.username!=None else callback_query.from_user.first_name}")
-
+    return True
 
 async def modify_cookie_message(callback_query):
     try:
@@ -273,7 +273,7 @@ async def modify_cookie_message(callback_query):
         f"Complimenti🥳 {callback_query.from_user.first_name}! Hai divorato il biscotto 🤤!", show_alert=True)
     await Main.log_message(
         f"Biscotto del gruppo: {callback_query.message.chat.title} riscattato da: @{callback_query.from_user.username if callback_query.from_user.username!=None else callback_query.from_user.first_name}")
-
+    return True
 
 async def modify_expired_cookie_message(callback_query):
     session_qta = await Db.session_query({"_id": callback_query.from_user.id}, {"qta": 1}, "qta")

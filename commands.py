@@ -13,9 +13,8 @@ async def command_announce(message_text):
 
 
 async def create_groups_list():
-    groups = Db.groups.find({}, {"_id": 1})
     text = "Lista gruppi in cui il biscotto è attivo:\n"
-    for element in groups:
+    for element in Db.groups.find({}, {"_id": 1}):
         group_info = await Main.app.get_chat(element["_id"])
         text += f"- {element['_id']}, {group_info.title}, {group_info.members_count}\n"
     return text
@@ -103,11 +102,11 @@ async def change_privacy_property(chat_id, chat_title, message_id):
     await Group.group_info(chat_title, chat_id, message_id)
 
 
-async def change_gifts_property(chat_id, chat_title, message_id):
+async def change_gifts_property(chat_id, chat_title, callback_query):
     current_set = await Db.group_query({"_id": chat_id}, {"gift": 1}, "gift")
     match current_set:
         case 0:  # hidden
             Db.groups.update_one({"_id": chat_id}, {"$set": {"gift": 1}})
         case 1:  # showed
             Db.groups.update_one({"_id": chat_id}, {"$set": {"gift": 0}})
-    await Group.group_info(chat_title, chat_id, message_id)
+    await Group.group_info(chat_title, chat_id, callback_query)

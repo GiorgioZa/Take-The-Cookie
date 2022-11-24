@@ -80,8 +80,7 @@ def start_scheduler():
         case _:
             asyncioscheduler.add_job(Cookie.cookie, 'interval',  seconds=10,
                                      args=(group_id,), id='cookie', replace_existing=True)
-    bets = Db.bet.find({"closed": 0})
-    for element in bets:
+    for element in Db.bet.find({"closed": 0}):
         try:
             asyncioscheduler.add_job(Bet.close_bet, 'interval', minutes=10,
                                      args=(element["_id"], element["bet_message"]), id=f'bet{element["_id"]}')
@@ -100,8 +99,9 @@ def time_scheduler():
 
 
 async def remove_error(group_id):
+    query = await Db.group_query({"_id": group_id},{'name': 1}, 'name')
     Db.groups.delete_one({"_id": group_id})
-    await log_message(f"Ho eliminato il gruppo con questo id: {group_id}")
+    await log_message(f"Ho eliminato il gruppo {query} con questo id: {group_id} ")
     try:
         await app.send_message(
             group_id, f"A causa di un errore di sistema, questo gruppo è stato rimosso dal database😵‍💫, puoi riaggiungerlo usando il comando /add ;)")
@@ -110,7 +110,7 @@ async def remove_error(group_id):
 
 
 async def download_propic(user_id):
-    user = app.get_users(user_id)
+    user = await app.get_users(user_id)
     a = await test_download_propic(user, user_id)
     return a
 
@@ -209,7 +209,7 @@ async def find_group(groups):
     for group in groups:
         try:
             group_members = await app.get_chat_members_count(group["_id"])
-        except (errors.ChannelInvalid, errors.ChannelPrivate, errors.PeerIdInvalid):
+        except:
             await remove_error(group["_id"])
             continue
         if choice < 10:  # 10%
@@ -272,9 +272,8 @@ async def select_group():
     match is_golden:
         case (0 | 100): is_gold = True
         case _: is_gold = False
-    groups_temp = Db.groups.find({}).sort("n_cookie", -1)
     groups = []
-    for element in groups_temp:
+    for element in Db.groups.find({}).sort("n_cookie", -1):
         groups.append(element)
     if len(groups) >= 2:
         await find_group(groups)
@@ -430,8 +429,7 @@ async def cookie(client, message):
 @app.on_message((filters.chat(SUPER_USER)) & filters.command("force_close"))
 async def forced_close_bet(client, message):
     await log_message("Ho forzato la chiusura delle scommesse anticipate!")
-    query = Db.bet.find({})
-    for element in query:
+    for element in Db.bet.find({}):
         await Bet.close_bet(element["_id"], element["bet_message"])
 
 
@@ -452,9 +450,7 @@ async def def_new_group(client, message):
     if not test:
         await app.send_message(message.chat.id, "Identificativo del gruppo errato")
         return
-
-    query = await Db.group_query({"_id": int(text[0])}, {"_id": 1}, "_id")
-    if query == None:
+    if await Db.group_query({"_id": int(text[0])}, {"_id": 1}, "_id") == None:
         await app.send_message(message.chat.id, "Gruppo non trovato all'interno del database")
     else:
         group_id = text[0]
@@ -508,7 +504,7 @@ async def det_gift(client, callback_query):
             "\n1) Sei stato bannato (usa il comando /im_banned per scoprirlo)\n2) Non sei admin di questo gruppo.", show_alert=True)
     else:
         await Commands.change_gifts_property(
-            callback_query.message.chat.id, callback_query.message.chat.title, callback_query.message.message_id)
+            callback_query.message.chat.id, callback_query.message.chat.title, callback_query)
 
 
 @app.on_message(filters.command("dev"))
@@ -718,9 +714,7 @@ async def bet(client, inline_query):
                 if user_qta >= 14:
                     user_qta = 14
                 flag = False
-                verify_previus_bet = Db.bet.find({"_id": int(split[1])}, {
-                                                 "yes_users": 1, "no_users": 1})
-                for element in verify_previus_bet:
+                for element in Db.bet.find({"_id": int(split[1])}, {"yes_users": 1, "no_users": 1}):
                     for bets in element["yes_users"]:
                         if bets["_id"] == inline_query.from_user.id:
                             flag = True

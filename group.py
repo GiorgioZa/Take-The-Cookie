@@ -8,9 +8,8 @@ from datetime import datetime
 
 async def group_info(group_name, group_id, callback_query):
     text = f"Statistiche del gruppo **{group_name}**\n"
-    group_info_temp = Db.groups.find({"_id": group_id})
     group_info = []
-    for x in group_info_temp:
+    for x in Db.groups.find({"_id": group_id}):
         group_info.append(x)
     group = await Main.app.get_chat(group_id)
     text += f"- id: __{group_id}__\n"\
@@ -108,8 +107,7 @@ async def remove_group(group_id, user_id):
         await Main.app.send_message(group_id, "**ERRORE!** Non puoi rimuovere il bot dal gruppo perchè non sei admin di questo gruppo!")
         return
     else:
-        query = await Db.group_query({"_id": group_id}, {"_id": 1}, "_id")
-        if query == None:
+        if await Db.group_query({"_id": group_id}, {"_id": 1}, "_id") == None:
             await Main.app.send_message(group_id, "**ERRORE!** Il gruppo non risulta nel database! Riprova o contatta @GiorgioZa👌.")
             return
         else:

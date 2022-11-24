@@ -53,8 +53,7 @@ async def is_closed(group_id):
 
 
 async def bet_recap(group_id):
-    flag = await Db.bet_query({"_id": group_id}, {"announce"}, "announce")
-    if flag == 0:
+    if await Db.bet_query({"_id": group_id}, {"announce"}, "announce") == 0:
         Db.bet.update_one({"_id": group_id}, {"$set": {"announce": 1}})
         text = f"Riassunto delle scommesse nel gruppo **{await Db.group_query({'_id': group_id}, {'name'},'name')}**:\n"
         yes_bet = await Db.bet_query({"_id": group_id}, {"yes_users"}, "yes_users")

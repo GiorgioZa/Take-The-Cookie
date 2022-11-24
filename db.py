@@ -8,7 +8,7 @@ cookie_db = myclient["cookie"]
 # --cookies
 cookies = cookie_db["cookies"]
 # formate
-# {"_id": message_id, "group_id": group_id, "is_taken": flag 0/1, "is_expired": flag 0/1, "value": 1 or 10}
+# {"_id": message_id, "group_id": group_id, "is_taken": flag 0/1, "is_expired": flag 0/1, "value": 1 or 10, "date": current date}
 
 #-- user
 users = cookie_db["users"]
