@@ -66,7 +66,7 @@ async def my_stats(user_id, chat_id, message_id, callback_query):
             case 0:
                 propic = "static/img/users/user_default.png"
             case 1:
-                propic = f"static/img/users/{user_other_stats[0]['_id']}.png"
+                propic = f"static/img/users/{int(user_other_stats[0]['_id'])}.png"
         match message_id:
             case None:
                 await Main.app.send_photo(chat_id,
@@ -75,9 +75,9 @@ async def my_stats(user_id, chat_id, message_id, callback_query):
                                           reply_markup=Main.InlineKeyboardMarkup(
                                               [
                                                   [Main.InlineKeyboardButton(
-                                                      "Aggiorna!", callback_data="update", user_id=user_id), 
+                                                      "Aggiorna!", callback_data="update"), 
                                                     Main.InlineKeyboardButton(
-                                                      "Aggiorna propic", callback_data="update_propic", user_id=user_id)],
+                                                      "Aggiorna propic", callback_data="update_propic")],
                                               ]))
             case _:
                 try:
@@ -87,9 +87,9 @@ async def my_stats(user_id, chat_id, message_id, callback_query):
                                                         reply_markup=Main.InlineKeyboardMarkup(
                                                             [
                                                                 [Main.InlineKeyboardButton(
-                                                                  "Aggiorna!", callback_data="update", user_id=user_id), 
+                                                                  "Aggiorna!", callback_data="update"), 
                                                                 Main.InlineKeyboardButton(
-                                                                  "Aggiorna propic", callback_data="update_propic", user_id=user_id)],
+                                                                  "Aggiorna propic", callback_data="update_propic")],
                                                             ]))
                 except Main.errors.MessageNotModified:
                     await callback_query.answer("Informazioni già aggiornate!", show_alert=True)

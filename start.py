@@ -1,4 +1,4 @@
 import Main
-# Main.start_scheduler()
+Main.start_scheduler()
 print("started")
 Main.app.run()

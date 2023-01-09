@@ -36,7 +36,7 @@ group_id = "0"
 flag = None
 occupied = False
 
-
+#this function permit to remove asyncio scheduler with id.
 def remove_scheduler(id, f):
     match f:
         case 0:  # normal scheduler
@@ -52,20 +52,21 @@ def remove_scheduler(id, f):
                 return False
             return True
 
-
+#this function permit to schedulate new date for the cookie
 async def scheduler_new_date():
     remove_scheduler('biscotto', 1)
-    a = random.randrange(3)  # da 0 a 2 ore
+    a = randomic_choice(3)  # da 0 a 2 ore
     b = random.randrange(10, 60)  # da 10 a 59 minuti
-    c = random.randrange(60)  # da 0 a 59 secondi
+    c = randomic_choice(60)  # da 0 a 59 secondi
     try:
         asyncioscheduler.add_job(Cookie.cookie, 'interval', hours=a, minutes=b,
                                  seconds=c, args=(group_id,), id='cookie')
         await log_message(f"Prossimo biscotto tra: {a}h:{b}m:{c}s")
-    except:
+    except Exception as e:
+        await log_message(f"funzione scheduler_new_date exception:_{e}_")
         await restart()
 
-
+#this function is called when there isn't a group or at the startup
 async def restart():
     remove_scheduler("main", 1)
     await select_group()
@@ -90,12 +91,12 @@ def start_scheduler():
 
 
 def time_scheduler():
-    if (datetime.now().hour > 0 and datetime.now().hour < 23) and ((datetime.now().minute > 0 and datetime.now().minute < 50)):
-        try:
-            asyncioscheduler.add_job(Bet.remove, 'cron', hour='0', args=(
-                None, False), timezone="CET", id='time')
-        except:
-            pass
+    #if (datetime.now().hour > 0 and datetime.now().hour < 23) and ((datetime.now().minute > 0 and datetime.now().minute < 50)):
+    try:
+        asyncioscheduler.add_job(Bet.remove, 'cron', hour='0', args=(
+            None, False), timezone="CET", id='time')
+    except:
+        pass
 
 
 async def remove_error(group_id):
@@ -105,22 +106,23 @@ async def remove_error(group_id):
     try:
         await app.send_message(
             group_id, f"A causa di un errore di sistema, questo gruppo è stato rimosso dal database😵‍💫, puoi riaggiungerlo usando il comando /add ;)")
-    except:
+    except Exception as e:
+        await log_message(f"funzione remove_error exception:_{e}_")
         pass
 
 
 async def download_propic(user_id):
     user = await app.get_users(user_id)
-    a = await test_download_propic(user, user_id)
-    return a
+    return await test_download_propic(user, user_id)
 
 
 async def test_download_propic(user, user_id):
     propic = await Db.user_query({'_id': user_id}, {"propic": 1}, 'propic')
     if propic == 1:
         try:
-            os.remove(f"static/img/users/{user_id}.png")
-        except:
+            os.remove(f"static/img/users/{int(user_id)}.png")
+        except Exception as e:
+            await log_message(e)
             pass
         a = await really_download(user)
         update_db_propic(a, user_id)
@@ -130,22 +132,23 @@ async def test_download_propic(user, user_id):
 
 
 def update_db_propic(element, user_id):
-    if not element:
-        Db.users.update_one({"_id": user_id}, {
-            "$set": {"propic": 0}})
-        return False
-    else:
+    if element:
         Db.users.update_one({"_id": user_id}, {
             "$set": {"propic": 1}})
         return True
+    else:
+        Db.users.update_one({"_id": user_id}, {
+            "$set": {"propic": 0}})
+        return False
 
 
 
 async def really_download(user):
     try:
-        await app.download_media(user.from_user.photo.big_file_id,
-                                     f"static/img/users/{user.from_user.id}.png")
-    except:
+        await app.download_media(user.photo.small_file_id ,
+                                     f"static/img/users/{int(user.id)}.png")
+    except Exception as e:
+        await log_message(e)
         return False
     return True
 
@@ -187,7 +190,8 @@ async def really_download_group(group):
     try:
         await app.download_media(group.photo.big_file_id,
                                      f"static/img/groups/{group.id}.png")
-    except:
+    except Exception as e:
+        await log_message(e)
         return False
     return True
 
@@ -204,49 +208,39 @@ def randomic_choice(limit):
 
 async def find_group(groups):
     global group_id, flag
-    choice = randomic_choice(176)
+    choice = randomic_choice(101)
     selected = []
     for group in groups:
         try:
             group_members = await app.get_chat_members_count(group["_id"])
-        except:
+        except Exception as e:
+            await log_message(e)
             await remove_error(group["_id"])
             continue
-        if choice < 10:  # 10%
+        if choice < 8 and group_members < 20:
             flag = False  # small group
-            if group_members < 16:  # 0-15
-                selected.append(group["_id"])
-                continue
-        elif choice < 10 + 15:  # 15%
+            selected.append(group["_id"])
+            continue
+        elif choice < 8 + 10 and (group_members >= 20 and group_members < 50):  # 15%
             flag = False  # small group
-            if group_members >= 16 and group_members < 25:  # 16-24
-                selected.append(group["_id"])
-                continue
-        elif choice < 10 + 15 + 20:  # 20%
+            selected.append(group["_id"])
+            continue
+        elif choice < 8 + 10 + 15 and (group_members >= 50 and group_members < 75):  # 20%
             flag = False  # small group
-            if group_members >= 25 and group_members < 50:  # 25-49
-                selected.append(group["_id"])
-                continue
-        elif choice < 10 + 15 + 20 + 25:  # 25%
+            selected.append(group["_id"])
+            continue
+        elif choice <  8 + 10 + 15 + 20 and (group_members >= 75 and group_members < 110):  # 25%
             flag = False  # small group
-            if group_members >= 50 and group_members < 90:  # 25-89
-                selected.append(group["_id"])
-                continue
-        elif choice < 10 + 15 + 20 + 25 + 30 : #30%
+            selected.append(group["_id"])
+            continue
+        elif choice < 8 + 10 + 15 + 20 + 30 and (group_members >= 110 and group_members < 150) : #30%
             flag = True  # big group
-            if group_members >= 90 and group_members < 150:  # 90-149
-                selected.append(group["_id"])
-                continue
-        elif choice < 10 + 15 + 20 + 25 + 30 + 35:  # 35%
+            selected.append(group["_id"])
+            continue
+        elif choice <= 8 + 10 + 15 + 20 + 30 + 17 and group_members >= 150:  # 35%
             flag = True  # big group
-            if group_members >= 150 and group_members < 500:  # da 150 a 499
-                selected.append(group["_id"])
-                continue
-        elif choice <= 10 + 15 + 20 + 25 + 30 + 35 + 40:  # (40%)
-            flag = True  # big group
-            if group_members >= 500:  # 500+
-                selected.append(group["_id"])
-                continue
+            selected.append(group["_id"])
+            continue
     if len(selected) >= 2:
         random.shuffle(selected)
         text = f"Il numero randomico è: {choice}. La scelta ricade tra questi gruppi:\n"
@@ -273,7 +267,7 @@ async def select_group():
         case (0 | 100): is_gold = True
         case _: is_gold = False
     groups = []
-    for element in Db.groups.find({}).sort("n_cookie", -1):
+    for element in Db.groups.find({}).sort("n_cookie", 1):
         groups.append(element)
     if len(groups) >= 2:
         await find_group(groups)
@@ -311,7 +305,8 @@ async def verify_group():
 async def try_get_chat(group_id):
     try:
         return await app.get_chat(group_id)
-    except: #if there's an exception it mean that we've a problem with the group or with the group id, better change
+    except Exception as e:   #if there's an exception it mean that we've a problem with the group or with the group id, better change
+        await log_message(e) 
         await log_message(f"ho avuto un problema nell'ottenere info con get_chat per il gruppo con id {group_id}")
         return False
 
@@ -320,7 +315,8 @@ async def delete_message(chat_id, message_id):
     try:
         await app.delete_messages(chat_id, message_id)
         return True
-    except:
+    except Exception as e:
+        await log_message(e)
         return False
 
 #@app.on_message(filters.command("cookie"))
@@ -462,7 +458,8 @@ async def ban_user(client, message):
     text.pop(0)
     try:
         test = await app.get_users(text[0])
-    except:
+    except Exception as e:
+        await log_message(f"funzione ban_user input:_{message}_\n\nexception:_{e}_")
         await app.send_message(message.chat.id, "Utente non trovato!")
         return
     await app.send_message(message.chat.id, User.ban_user(test.id))
@@ -474,7 +471,8 @@ async def modify_user(client, message):
     text.pop(0)
     try:
         test = await app.get_users(text[0])
-    except:
+    except Exception as e:
+        await log_message(e)
         await app.send_message(message.chat.id, "Utente non trovato!")
         return
     await User.modify_user_qta(test.id, int(text[1]))
@@ -548,7 +546,7 @@ async def give_cookie(client, message):
     command.pop(0)
     try:
         qta = int(command[1])
-    except IndexError:
+    except:
         await app.send_message(message.chat.id, error,
                                reply_to_message_id=message.message_id)
         return
@@ -558,7 +556,8 @@ async def give_cookie(client, message):
         return
     try:
         receiver = await app.get_users(command[0])
-    except:
+    except Exception as e:
+        await log_message(e)
         await app.send_message(message.chat.id, error,
                                reply_to_message_id=message.message_id)
         return
@@ -829,7 +828,8 @@ async def change_bet_qta(client, callback_query):
                                         [InlineKeyboardButton(
                                             f"✅Conferma puntata✅", callback_data=f"def_bet;{split[0]};{split[1]}")]
                                     ]))
-    except:
+    except Exception as e:
+        await log_message(e)
         match split[1]:
             case "yes":
                 split[1] = "no"
@@ -861,5 +861,6 @@ async def confirm_bet(client, callback_query):
         try:
             await app.edit_message_text(int(split[0]), user["bet_message"],
                                         f"✅{callback_query.from_user.mention} ha confermato la scommessa di {user['qta']} biscotti sul '{'SI' if split[1] == 'yes' else 'NO'}'!")
-        except:
+        except Exception as e:
+            await log_message(e)
             callback_query.answer("Errore durante il completamento dell'operazione. Nessuna modifica e' stata completata!", show_alert=True)
