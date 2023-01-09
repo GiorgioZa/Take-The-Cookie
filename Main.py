@@ -217,19 +217,19 @@ async def find_group(groups):
             await log_message(e)
             await remove_error(group["_id"])
             continue
-        if choice < 8 and group_members < 20:
+        if choice < 8 and group_members < 20:   #8%
             flag = False  # small group
             selected.append(group["_id"])
             continue
-        elif choice < 8 + 10 and (group_members >= 20 and group_members < 50):  # 15%
+        elif choice < 8 + 10 and (group_members >= 20 and group_members < 50):  # 10%
             flag = False  # small group
             selected.append(group["_id"])
             continue
-        elif choice < 8 + 10 + 15 and (group_members >= 50 and group_members < 75):  # 20%
+        elif choice < 8 + 10 + 15 and (group_members >= 50 and group_members < 75):  # 15%
             flag = False  # small group
             selected.append(group["_id"])
             continue
-        elif choice <  8 + 10 + 15 + 20 and (group_members >= 75 and group_members < 110):  # 25%
+        elif choice <  8 + 10 + 15 + 20 and (group_members >= 75 and group_members < 110):  # 20%
             flag = False  # small group
             selected.append(group["_id"])
             continue
@@ -237,7 +237,7 @@ async def find_group(groups):
             flag = True  # big group
             selected.append(group["_id"])
             continue
-        elif choice <= 8 + 10 + 15 + 20 + 30 + 17 and group_members >= 150:  # 35%
+        elif choice >= 8 + 10 + 15 + 20 + 30 + 17 and group_members >= 150:  # 17%
             flag = True  # big group
             selected.append(group["_id"])
             continue
@@ -283,9 +283,9 @@ async def select_group():
 async def verify_group():
     match flag:
         case True:  # big group
-            query = Db.cookies.find({}).limit(10).sort('date', -1)
+            query = Db.cookies.find({}).limit(10).sort('time', -1)
         case False:  # small group
-            query = Db.cookies.find({}).limit(5).sort('date', -1)
+            query = Db.cookies.find({}).limit(5).sort('time', -1)
 
     for element in query:
         if int(group_id) == int(element['group_id']):
@@ -509,7 +509,7 @@ async def det_gift(client, callback_query):
 async def dev_info(client, message):
     await app.send_message(message.chat.id, f"Versione biscotti: 2.5.3"\
                                             "\nSviluppato da @GiorgioZa con l'aiuto e supporto dei suoi amiketti che lo sostengono in ogni sua minchiata ❤️."\
-                                            "\nUltime info sul bot -> canale ufficiale (https://t.me/TakeTheCookie)")
+                                            "\nUltime info sul bot -> [canale ufficiale] (https://t.me/TakeTheCookie)")
 
 
 # /im_banned, this show your status about ban

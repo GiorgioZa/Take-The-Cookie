@@ -79,7 +79,7 @@ async def show_leaderboard(chat_id, message_id, flag, callbackquery):
         text += f"{'🥇' if c == 1 else '🥈' if c==2 else '🥉'} {user.username}: {x[search_key]}🍪\n"
         c += 1
     if c != 1:  # there are user in db
-        text += "\nPer vedere la classifica completa, visita il sito (https://bit.ly/3ODSCXO)!"
+        text += "\nPer vedere la classifica completa, visita il [sito](https://bit.ly/3ODSCXO)!"
     else:
         text = "**NESSUN UTENTE HA ANCORA RISCATTATO BISCOTTI. LA CLASSIFICA NON PUO' ESSERE GENERATA!"
     match callbackquery:

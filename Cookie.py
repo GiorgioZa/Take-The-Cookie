@@ -24,10 +24,10 @@ async def cookie(group_id):
         match Main.is_gold:
             case True:
                 Db.cookies.insert_one(
-                    {"_id": bisquit.message_id, "group_id": bisquit.chat.id,  "is_taken": 0, "is_expired": 0, "value": 10, "date": datetime.now()})
+                    {"_id": bisquit.message_id, "group_id": bisquit.chat.id,  "is_taken": 0, "is_expired": 0, "value": 10, "time": datetime.now().timestamp()})
             case False:
                 Db.cookies.insert_one(
-                    {"_id": bisquit.message_id, "group_id": bisquit.chat.id, "is_taken": 0, "is_expired": 0, "value": 1, "date": datetime.now()})
+                    {"_id": bisquit.message_id, "group_id": bisquit.chat.id, "is_taken": 0, "is_expired": 0, "value": 1, "time": datetime.now().timestamp()})
         await Main.log_message(
             f"ho inviato biscotto nel gruppo: '{bisquit.chat.title}'")
     except:  # cookie invalid or something else
